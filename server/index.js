@@ -5,16 +5,14 @@ const cron = require('node-cron');
 const { db, initDb } = require('./db');
 const { summarizeActivities, abortGeneration } = require('./ollama');
 
+const app = express();
+const PORT = process.env.PORT || 3000;
+
 // Abort ongoing AI generation
 app.post('/api/abort-summary', (req, res) => {
     abortGeneration();
     res.json({ message: 'AI generation aborted.' });
 });
-const { getMeetingsForTimeframe } = require('./calendar');
-require('dotenv').config();
-
-const app = express();
-const PORT = process.env.PORT || 3000;
 
 app.set('view engine', 'ejs');
 app.use(cors());
