@@ -100,9 +100,21 @@
             const container = document.getElementById('recent-list');
             container.innerHTML = `
                 <table>
-                    <thead><tr><th>Time</th><th>Process</th><th>Window Title</th></tr></thead>
+                    <thead><tr><th>Time</th><th>Process</th><th>Window</th></tr></thead>
                     <tbody>
-                        ${data.map(a => `<tr><td>${new Date(a.timestamp).toLocaleTimeString()}</td><td>${a.process_name}</td><td>${a.window_title}</td></tr>`).join('')}
+                        ${data.map(a => `
+                            <tr>
+                                <td>${new Date(a.timestamp).toLocaleTimeString()}</td>
+                                <td>${a.process_name}</td>
+                                <td>
+                                    <details>
+                                        <summary>${a.window_title}</summary>
+                                        <p><strong>OCR:</strong> ${a.ocr_text ? a.ocr_text.substring(0, 500) : 'No text'}</p>
+                                        ${a.image_data ? `<img src="data:image/jpeg;base64,${a.image_data}" style="max-width:400px; border:1px solid #444;" />` : 'No screenshot'}
+                                    </details>
+                                </td>
+                            </tr>
+                        `).join('')}
                     </tbody>
                 </table>`;
         }
