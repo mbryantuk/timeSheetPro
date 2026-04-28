@@ -22,10 +22,10 @@ app.use(express.json({ limit: '10mb' }));
 app.use(morgan('dev'));
 
 // Serve React static files
-app.use(express.static(path.join(__dirname, '../web-ui/dist')));
+app.use(express.static(path.join(__dirname, 'dist')));
 
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../web-ui/dist/index.html'));
+  res.sendFile(path.join(__dirname, 'dist/index.html'));
 });
 
 // Hierarchy Endpoints
