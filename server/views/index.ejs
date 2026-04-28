@@ -9,50 +9,82 @@
         .task-card { border: 1px solid #444; padding: 15px; margin-bottom: 10px; border-radius: 8px; }
         .summary-text { font-style: italic; color: #aaa; margin: 10px 0; }
         .hours { font-weight: bold; color: #007acc; }
+        select { margin-right: 10px; }
     </style>
 </head>
 <body>
     <h1>🕒 TimeSheetPro</h1>
-    <p>Review and sync your automated timesheet entries.</p>
+    <p>Review your hourly AI summaries and assign them to Klient tasks.</p>
     
     <div id="report-container">
-        <h2>Today's Activity</h2>
-        <div id="tasks-list">Loading daily report...</div>
+        <h2>Pending Drafts (Action Required)</h2>
+        <div id="drafts-list">Loading pending drafts...</div>
     </div>
 
     <script>
-        async function loadReport() {
-            const today = new Date().toISOString().split('T')[0];
-            const res = await fetch(`/api/reports/daily?date=\${today}`);
+        let allTasks = [];
+
+        async function loadTasks() {
+            const res = await fetch('/api/tasks');
+            allTasks = await res.json();
+        }
+
+        async function loadDrafts() {
+            await loadTasks();
+            const res = await fetch('/api/drafts');
             const data = await res.json();
             
-            const container = document.getElementById('tasks-list');
+            const container = document.getElementById('drafts-list');
             container.innerHTML = '';
 
             if (data.length === 0) {
-                container.innerHTML = '<p>No activity recorded today yet.</p>';
+                container.innerHTML = '<p>No pending drafts! You are all caught up.</p>';
                 return;
             }
 
             data.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'task-card';
+
+                // Build task dropdown
+                let optionsHtml = '<option value="">-- Select Klient Task --</option>';
+                allTasks.forEach(t => {
+                    optionsHtml += `<option value="\${t.id}">\${t.name}</option>`;
+                });
+
                 div.innerHTML = `
-                    <h3>\${item.project_name} - \${item.task_name}</h3>
+                    <p style="font-size:0.8em; color:#888;">Generated: \${new Date(item.created_at).toLocaleString()}</p>
                     <p class="hours">Total Time: \${item.hours} hours</p>
-                    <p class="summary-text">"\${item.summary}"</p>
-                    <button onclick="syncTask('\${item.task_id}')">Sync to Klient</button>
+                    <p class="summary-text">"\${item.notes}"</p>
+                    
+                    <select id="task-select-\${item.id}">\${optionsHtml}</select>
+                    <button onclick="approveDraft('\${item.id}')">Approve & Assign</button>
                 `;
                 container.appendChild(div);
             });
         }
 
-        async function syncTask(taskId) {
-            alert('Sync to Salesforce feature coming next!');
+        async function approveDraft(id) {
+            const taskId = document.getElementById(`task-select-\${id}`).value;
+            if (!taskId) {
+                alert('Please select a Klient Task first!');
+                return;
+            }
+
+            const res = await fetch(`/api/drafts/\${id}/approve`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ task_id: taskId })
+            });
+
+            if (res.ok) {
+                loadDrafts(); // Refresh list
+            } else {
+                alert('Failed to approve draft.');
+            }
         }
 
-        loadReport();
-        setInterval(loadReport, 60000); // Refresh every minute
+        loadDrafts();
     </script>
 </body>
 </html>

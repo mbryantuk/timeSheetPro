@@ -1,8 +1,10 @@
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
+const cron = require('node-cron');
 const { db, initDb } = require('./db');
 const { summarizeActivities } = require('./ollama');
+const { getMeetingsForTimeframe } = require('./calendar');
 require('dotenv').config();
 
 const app = express();
@@ -110,6 +112,81 @@ app.get('/api/reports/daily', async (req, res) => {
 
 // Health Check
 app.get('/health', (req, res) => res.send('OK'));
+
+// --- Hourly Sync & Approval Flow --- //
+
+// Fetch pending drafts
+app.get('/api/drafts', async (req, res) => {
+  try {
+    const drafts = await db('timesheet_entries')
+      .leftJoin('tasks', 'timesheet_entries.task_id', 'tasks.id')
+      .leftJoin('projects', 'tasks.project_id', 'projects.id')
+      .where('status', 'draft')
+      .select(
+        'timesheet_entries.id',
+        'timesheet_entries.date',
+        'timesheet_entries.hours',
+        'timesheet_entries.notes',
+        'timesheet_entries.created_at',
+        'projects.name as project_name',
+        'tasks.name as task_name'
+      ).orderBy('created_at', 'desc');
+    res.json(drafts);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Approve a draft
+app.put('/api/drafts/:id/approve', async (req, res) => {
+  const { id } = req.params;
+  const { task_id } = req.body;
+  try {
+    await db('timesheet_entries')
+      .where('id', id)
+      .update({ status: 'approved', task_id });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Hourly Cron Job to generate drafts
+cron.schedule('0 * * * *', async () => {
+    console.log('⏰ Running hourly summarization job...');
+    const end = new Date();
+    const start = new Date(end.getTime() - 60 * 60 * 1000);
+
+    try {
+        const activities = await db('activities')
+          .where('timestamp', '>=', start.toISOString())
+          .andWhere('timestamp', '<=', end.toISOString());
+
+        if (activities.length === 0) {
+          console.log('No activities found for the last hour.');
+          return;
+        }
+
+        const meetings = await getMeetingsForTimeframe(start, end);
+        const calendarContext = meetings.join('\n');
+
+        const summary = await summarizeActivities(activities, calendarContext);
+
+        const totalMs = activities.reduce((sum, a) => sum + a.duration_ms, 0);
+        const decimalHours = parseFloat((totalMs / (1000 * 60 * 60)).toFixed(2));
+
+        await db('timesheet_entries').insert({
+          task_id: null,
+          date: start.toISOString().split('T')[0],
+          hours: decimalHours,
+          notes: summary,
+          status: 'draft'
+        });
+        console.log(`✅ Hourly summary drafted: ${summary.substring(0, 50)}...`);
+    } catch (e) {
+        console.error('Hourly summarization failed:', e.message);
+    }
+});
 
 async function start() {
   await initDb();

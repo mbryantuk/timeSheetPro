@@ -11,7 +11,7 @@ const PROMPT_FILE = path.join(__dirname, 'PROMPT.txt');
 /**
  * Summarizes a batch of activities into a Klient-compatible comment.
  */
-async function summarizeActivities(activities) {
+async function summarizeActivities(activities, calendarContext = '') {
   if (!activities || activities.length === 0) return null;
 
   let systemPrompt = "You are a professional project manager.";
@@ -27,7 +27,10 @@ async function summarizeActivities(activities) {
     `- [${a.process_name}] ${a.window_title} (${Math.round(a.duration_ms / 1000 / 60)} mins) ${a.ocr_text ? 'Context: ' + a.ocr_text.substring(0, 100) : ''}`
   ).join('\n');
 
-  const userPrompt = `Summarize these activities:\n${activitySummary}`;
+  let userPrompt = `Summarize these activities:\n${activitySummary}`;
+  if (calendarContext) {
+      userPrompt += `\n\n### IMPORTANT CALENDAR CONTEXT\nThe user had the following calendar events scheduled during this time. Please use these to accurately name meetings or projects if they relate to the raw activity logs:\n${calendarContext}`;
+  }
 
   try {
     const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
