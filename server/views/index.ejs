@@ -52,11 +52,21 @@
                     optionsHtml += `<option value="${t.id}">${t.name}</option>`;
                 });
 
+                let rawHtml = '';
+                if (item.raw_data) {
+                    try {
+                        const rawArray = JSON.parse(item.raw_data);
+                        rawHtml = '<details style="margin-bottom:10px; font-size:0.8em; color:#aaa;"><summary style="cursor:pointer;">View Raw Data</summary><ul style="padding-left:20px;">';
+                        rawArray.forEach(a => rawHtml += `<li>${a.replace(/</g, '&lt;')}</li>`);
+                        rawHtml += '</ul></details>';
+                    } catch(e) {}
+                }
+
                 div.innerHTML = `
                     <p style="font-size:0.8em; color:#888;">Generated: ${new Date(item.created_at).toLocaleString()}</p>
                     <p class="hours">Total Time: ${item.hours} hours</p>
                     <p class="summary-text">"${item.notes}"</p>
-                    
+                    ${rawHtml}
                     <select id="task-select-${item.id}">${optionsHtml}</select>
                     <button onclick="approveDraft('${item.id}')">Approve & Assign</button>
                 `;

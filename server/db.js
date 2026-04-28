@@ -61,6 +61,11 @@ async function initDb() {
       table.text('notes');
       table.string('status').defaultTo('draft'); // draft, synced, error
       table.timestamp('created_at').defaultTo(db.fn.now());
+      table.text('raw_data');
+    });
+  } else if (!(await db.schema.hasColumn('timesheet_entries', 'raw_data'))) {
+    await db.schema.alterTable('timesheet_entries', (table) => {
+      table.text('raw_data');
     });
   }
 }

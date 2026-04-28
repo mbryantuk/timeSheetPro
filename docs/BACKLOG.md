@@ -33,15 +33,15 @@
 - **STORY-4.3 (PO):** As a user, I want to manually override or switch tasks via the widget if the AI's "best guess" is wrong.
 
 ## Sprint 1 Plan (The Foundation)
-### Task 1.0: Infrastructure - Git & Monorepo (Dev)
+### Task 1.0: Infrastructure - Git & Monorepo (Done)
 - Initialize Git repository.
 - Create comprehensive `.gitignore` for Node and C#.
 - Setup directory structure (`/server`, `/client`).
 
-### Task 1.1: Backend - Klient Data Model (Dev)
+### Task 1.1: Backend - Klient Data Model (Done)
 - Create `accounts`, `projects`, and `tasks` tables in SQLite (matching `Krow__` fields).
 - Implement API endpoints for CRUD on the hierarchy.
-- **New:** Add `SalesforceService` for OAuth and `Krow__Timesheet_Split__c` sync.
+- Add `SalesforceService` for OAuth and `Krow__Timesheet_Split__c` sync.
 
 ### Task 1.2: Client - The "Watcher" Service (Done)
 - Scaffolding .NET 9 WPF application.
@@ -61,6 +61,20 @@
 - Setup xUnit for the C# client.
 - Create an "Activity Mock" script to simulate 8 hours of work for testing the summarizer.
 
-### Task 1.6: Release - Phase 1 Alpha (Architect)
+### Task 1.6: Release - Phase 1 Alpha (Done)
 - Script to start both Backend and Client in "Dev Mode".
 - README instructions for local setup.
+- Build the web UI dashboard for reviewing and assigning drafts.
+
+## Sprint 2 Plan (Integration & Automation)
+### Task 2.1: Salesforce OAuth & Sync (Dev)
+- Implement Salesforce OAuth 2.0 flow.
+- Securely store access tokens.
+- Implement the actual POST request in `SalesforceService` to sync approved entries to Klient.
+
+### Task 2.2: Refine the UI (Dev)
+- Improve the Web Dashboard to show sync status (Draft, Synced, Error).
+- Add error handling and user feedback for failed syncs.
+
+### Task 2.3: Packaging (Architect)
+- Create a simple script or GitHub action to package the Windows Client into a downloadable `.zip` or `.exe`.
