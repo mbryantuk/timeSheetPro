@@ -77,5 +77,5 @@
 - Improve the Web Dashboard to show a "Weekly Summary" view alongside "Pending Drafts".
 - Allow users to edit the AI-generated notes directly on the dashboard before clicking "Approve".
 
-### Task 2.3: Packaging (Architect)
+### Task 2.3: Packaging (Done)
 - Package the Windows Client into a simple downloadable `.zip` or `.exe` for easy deployment.
