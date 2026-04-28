@@ -105,3 +105,10 @@ Strict `.gitignore` policies to prevent leaking:
 - `*.sqlite` (local activity data).
 - `bin/`, `obj/`, `.vs/` (C# build artifacts).
 - `node_modules/` (Node.js dependencies).
+
+## Deployment & Operations
+### Docker Rebuilds
+When making changes to the Node.js server dependencies (`package.json`), environment variables, or core configuration files, you must fully rebuild the Docker container to ensure changes take effect. Run the following command from the root of the repository on your Linux server:
+```bash
+docker compose up -d --build --force-recreate
+```

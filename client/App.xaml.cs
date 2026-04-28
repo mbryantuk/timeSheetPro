@@ -25,6 +25,7 @@ namespace TimeSheetPro.Client
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+            Application.Current.ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
             // Load saved URL if exists
             if (File.Exists("settings.txt")) {
