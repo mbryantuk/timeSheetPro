@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>TimeSheetPro | Architect Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css">
     <style>
-        * { box-sizing: border-box; }
         body { display: flex; height: 100vh; margin: 0; font-family: sans-serif; background: #111; color: #eee; }
         #sidebar { width: 250px; background: #222; padding: 20px; border-right: 1px solid #444; flex-shrink: 0; }
         #main-content { flex: 1; padding: 40px; overflow-y: auto; width: calc(100% - 250px); }
@@ -38,7 +38,7 @@
     <main id="main-content">
         <div id="drafts" class="view active">
             <h1>Pending Drafts</h1>
-            <button onclick="abortAI()" style="background:#cc0000;">Cancel Active AI Summary</button>
+            <button onclick="abortAI()" style="background:#cc0000; color: white;">Cancel Active AI Summary</button>
             <div id="drafts-list">Loading...</div>
         </div>
 
@@ -67,7 +67,7 @@
             </div>
             
             <h3>Manual Summarization</h3>
-            <p>Select a date range to force an AI summary for a specific period.</p>
+            <p>Select a date to force an AI summary for that day.</p>
             <input type="date" id="summary-date">
             <button onclick="triggerManualSummary()">Generate AI Summary</button>
             <div id="manual-summary-status" style="margin-top: 10px; font-weight: bold;"></div>
@@ -75,36 +75,6 @@
             <h3>Active Tasks Database</h3>
             <div id="active-tasks-list">Loading...</div>
         </div>
-
-        <script>
-        async function triggerManualSummary() {
-            const date = document.getElementById('summary-date').value;
-            if (!date) return alert('Select a date');
-            
-            const status = document.getElementById('manual-summary-status');
-            status.innerText = '🤖 AI is analyzing... (this may take a minute)';
-            status.style.color = '#007acc';
-
-            try {
-                const res = await fetch('/api/force-cron', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ date })
-                });
-                if (res.ok) {
-                    status.innerText = '✅ Summary generated!';
-                    status.style.color = 'limegreen';
-                    loadDrafts();
-                } else {
-                    status.innerText = '❌ Failed.';
-                    status.style.color = 'red';
-                }
-            } catch (e) {
-                status.innerText = '❌ Error.';
-                status.style.color = 'red';
-            }
-        }
-
 
         <div id="prompt" class="view">
             <h1>AI Personality</h1>
@@ -140,17 +110,27 @@
                 </table>`;
         }
 
-        async function loadCronLogs() {
-            const res = await fetch('/api/cron-logs');
+        async function loadDrafts() {
+            await loadTasks();
+            const res = await fetch('/api/drafts');
             const data = await res.json();
-            const container = document.getElementById('cron-logs-list');
-            container.innerHTML = `
-                <table style="width:100%; border-collapse: collapse;">
-                    <thead><tr><th>Time</th><th>Message</th></tr></thead>
-                    <tbody>
-                        ${data.map(l => `<tr><td>${new Date(l.timestamp).toLocaleString()}</td><td>${l.message}</td></tr>`).join('')}
-                    </tbody>
-                </table>`;
+            const container = document.getElementById('drafts-list');
+            container.innerHTML = data.map(item => `
+                <div class="task-card">
+                    <p>Generated: ${new Date(item.created_at).toLocaleString()}</p>
+                    <p class="hours">Total: ${item.hours} hours</p>
+                    <textarea id="notes-${item.id}" class="summary-text">${item.notes}</textarea>
+                    <select id="task-select-${item.id}">${allTasks.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}</select>
+                    <button onclick="approveDraft('${item.id}')">Approve</button>
+                </div>
+            `).join('');
+        }
+
+        async function loadWeeklyExport() {
+            const res = await fetch('/api/export/weekly');
+            const data = await res.json();
+            document.getElementById('export-list').innerHTML = `<table><tr><th>Date</th><th>Project</th><th>Task</th><th>Hours</th><th>Notes</th></tr>` + 
+                data.map(i => `<tr><td>${new Date(i.date).toLocaleDateString()}</td><td>${i.project_name}</td><td>${i.task_name}</td><td>${i.total_hours.toFixed(2)}</td><td>${i.combined_notes}</td></tr>`).join('') + `</table>`;
         }
 
         async function loadRecent() {
@@ -199,6 +179,19 @@
                 </table>`;
         }
 
+        async function loadCronLogs() {
+            const res = await fetch('/api/cron-logs');
+            const data = await res.json();
+            const container = document.getElementById('cron-logs-list');
+            container.innerHTML = `
+                <table style="width:100%; border-collapse: collapse;">
+                    <thead><tr><th>Time</th><th>Message</th></tr></thead>
+                    <tbody>
+                        ${data.map(l => `<tr><td>${new Date(l.timestamp).toLocaleString()}</td><td>${l.message}</td></tr>`).join('')}
+                    </tbody>
+                </table>`;
+        }
+
         function toggleImage(id) {
             const el = document.getElementById('img-' + id);
             el.style.display = el.style.display === 'none' ? 'block' : 'none';
@@ -210,33 +203,23 @@
             document.getElementById('ai-status-text').innerText = data.isSummarizing ? `🤖 ${data.currentTask}` : '🤖 AI: Idle';
         }
 
-        async function loadDrafts() {
-            await loadTasks();
-            const res = await fetch('/api/drafts');
-            const data = await res.json();
-            const container = document.getElementById('drafts-list');
-            container.innerHTML = data.map(item => `
-                <div class="task-card">
-                    <p>Generated: ${new Date(item.created_at).toLocaleString()}</p>
-                    <p class="hours">Total: ${item.hours} hours</p>
-                    <textarea id="notes-${item.id}" class="summary-text">${item.notes}</textarea>
-                    <select id="task-select-${item.id}">${allTasks.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}</select>
-                    <button onclick="approveDraft('${item.id}')">Approve</button>
-                </div>
-            `).join('');
-        }
-
-        async function loadWeeklyExport() {
-            const res = await fetch('/api/export/weekly');
-            const data = await res.json();
-            document.getElementById('export-list').innerHTML = `<table><tr><th>Date</th><th>Project</th><th>Task</th><th>Hours</th><th>Notes</th></tr>` + 
-                data.map(i => `<tr><td>${new Date(i.date).toLocaleDateString()}</td><td>${i.project_name}</td><td>${i.task_name}</td><td>${i.total_hours.toFixed(2)}</td><td>${i.combined_notes}</td></tr>`).join('') + `</table>`;
-        }
-
         async function importCSV() {
             const csv = document.getElementById('csv-data').value;
             const res = await fetch('/api/tasks/import/csv', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ csv }) });
             if (res.ok) { alert('Imported!'); loadTasks(); }
+        }
+
+        async function triggerManualSummary() {
+            const date = document.getElementById('summary-date').value;
+            if (!date) return alert('Select a date');
+            const status = document.getElementById('manual-summary-status');
+            status.innerText = '🤖 AI is analyzing... (this may take a minute)';
+            status.style.color = '#007acc';
+            try {
+                const res = await fetch('/api/force-cron', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date }) });
+                if (res.ok) { status.innerText = '✅ Summary generated!'; status.style.color = 'limegreen'; loadDrafts(); }
+                else { status.innerText = '❌ Failed.'; status.style.color = 'red'; }
+            } catch (e) { status.innerText = '❌ Error.'; status.style.color = 'red'; }
         }
 
         async function loadPrompt() {
@@ -265,6 +248,6 @@
 
         loadDrafts(); loadWeeklyExport(); loadPrompt(); loadRecent(); loadCronLogs();
         setInterval(updateAIStatus, 2000);
-        </script>
-        </body>
-        </html>
+    </script>
+</body>
+</html>
