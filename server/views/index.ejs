@@ -5,15 +5,15 @@
     <title>TimeSheetPro | Architect Dashboard</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css">
     <style>
-        body { display: flex; height: 100vh; margin: 0; font-family: sans-serif; background: #111; color: #eee; }
-        #sidebar { width: 250px; background: #222; padding: 20px; border-right: 1px solid #444; flex-shrink: 0; }
-        #main-content { flex: 1; padding: 40px; overflow-y: auto; width: calc(100% - 250px); }
+        body { margin: 0; font-family: sans-serif; background: #111; color: #eee; }
+        #sidebar { width: 100%; background: #222; padding: 20px; border-bottom: 1px solid #444; display: flex; gap: 10px; }
+        #main-content { padding: 40px; overflow-y: auto; width: 100%; }
         .view { display: none; width: 100%; }
         .view.active { display: block; }
         .task-card { border: 1px solid #444; padding: 20px; margin-bottom: 20px; border-radius: 8px; background: #1a1a1a; width: 100%; }
         .summary-text { width: 100%; height: 80px; color: #fff; background: #000; border: 1px solid #555; border-radius: 4px; padding: 10px; margin: 10px 0; }
         .hours { font-weight: bold; color: #007acc; font-size: 1.2em; }
-        nav button { display: block; width: 100%; margin-bottom: 10px; text-align: left; padding: 12px; cursor: pointer; background: #333; border: 1px solid #555; color: #fff; }
+        nav button { padding: 12px; cursor: pointer; background: #333; border: 1px solid #555; color: #fff; }
         nav button:hover { background: #444; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #444; padding: 12px; text-align: left; }
@@ -67,9 +67,9 @@
             </div>
             
             <h3>Manual Summarization</h3>
-            <p>Select a date to force an AI summary for that day.</p>
-            <input type="date" id="summary-date">
-            <button onclick="triggerManualSummary()">Generate AI Summary</button>
+            <p>Force an AI summary for a custom time range (hours).</p>
+            <input type="number" id="summary-hours" value="1" min="1" max="24" style="width: 60px;"> hours ago.
+            <button onclick="triggerTimeRangeSummary()">Generate AI Summary</button>
             <div id="manual-summary-status" style="margin-top: 10px; font-weight: bold;"></div>
 
             <h3>Active Tasks Database</h3>
@@ -209,17 +209,32 @@
             if (res.ok) { alert('Imported!'); loadTasks(); }
         }
 
-        async function triggerManualSummary() {
-            const date = document.getElementById('summary-date').value;
-            if (!date) return alert('Select a date');
+        async function triggerTimeRangeSummary() {
+            const hours = document.getElementById('summary-hours').value;
+            if (!hours) return alert('Select hours');
+
             const status = document.getElementById('manual-summary-status');
             status.innerText = '🤖 AI is analyzing... (this may take a minute)';
             status.style.color = '#007acc';
+
             try {
-                const res = await fetch('/api/force-cron', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date }) });
-                if (res.ok) { status.innerText = '✅ Summary generated!'; status.style.color = 'limegreen'; loadDrafts(); }
-                else { status.innerText = '❌ Failed.'; status.style.color = 'red'; }
-            } catch (e) { status.innerText = '❌ Error.'; status.style.color = 'red'; }
+                const res = await fetch('/api/force-cron', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ hours })
+                });
+                if (res.ok) {
+                    status.innerText = '✅ Summary generated!';
+                    status.style.color = 'limegreen';
+                    loadDrafts();
+                } else {
+                    status.innerText = '❌ Failed.';
+                    status.style.color = 'red';
+                }
+            } catch (e) {
+                status.innerText = '❌ Error.';
+                status.style.color = 'red';
+            }
         }
 
         async function loadPrompt() {

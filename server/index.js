@@ -319,11 +319,13 @@ app.get('/api/ai-status', async (req, res) => {
     res.json({ isSummarizing, currentTask });
 });
 
-// Force cron for testing
+// Force cron for testing by hours
 app.post('/api/force-cron', async (req, res) => {
-    console.log('⏰ Running FORCED summarization job...');
+    const { hours } = req.body;
+    console.log(`⏰ Running FORCED summarization job for last ${hours || 1} hours...`);
+    
     const end = new Date();
-    const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
+    const start = new Date(end.getTime() - (hours || 1) * 60 * 60 * 1000);
 
     try {
         await generateDraftForPeriod(start, end);
