@@ -9,9 +9,14 @@ const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'mistral';
 const PROMPT_FILE = path.join(__dirname, 'PROMPT.txt');
 
 let abortController = null;
+let isSummarizing = false;
+let currentTask = "Idle";
 
 async function summarizeActivities(activities, calendarContext = '') {
   if (!activities || activities.length === 0) return null;
+
+  isSummarizing = true;
+  currentTask = "Summarizing activities...";
 
   let systemPrompt = "You are a professional project manager.";
   try {
@@ -26,6 +31,7 @@ async function summarizeActivities(activities, calendarContext = '') {
   let images = [];
   if (lastActivity.ocr_text && lastActivity.ocr_text.length < 50 && lastActivity.image_data) {
       console.log('🧐 OCR text sparse, triggering vision analysis...');
+      currentTask = "Vision Analysis (Llava)...";
       images = [lastActivity.image_data];
   }
 
@@ -33,7 +39,7 @@ async function summarizeActivities(activities, calendarContext = '') {
     `- [${a.process_name}] ${a.window_title} (${Math.round(a.duration_ms / 1000 / 60)} mins)`
   ).join('\n');
 
-  const userPrompt = `Summarize these activities:\n${activitySummary}${calendarContext ? `\n\n### CALENDAR CONTEXT\n${calendarContext}` : ''}`;
+  const userPrompt = `Summarize these activities:\n${activitySummary}${calendarContext ? `\n\n### IMPORTANT CALENDAR CONTEXT\n${calendarContext}` : ''}`;
 
   abortController = new AbortController();
   try {
@@ -56,6 +62,8 @@ async function summarizeActivities(activities, calendarContext = '') {
     return "[Manual Entry Required] AI summarization failed.";
   } finally {
       abortController = null;
+      isSummarizing = false;
+      currentTask = "Idle";
   }
 }
 
@@ -65,4 +73,9 @@ function abortGeneration() {
     }
 }
 
-module.exports = { summarizeActivities, abortGeneration };
+module.exports = { 
+    summarizeActivities, 
+    abortGeneration, 
+    get isSummarizing() { return isSummarizing; }, 
+    get currentTask() { return currentTask; } 
+};

@@ -312,6 +312,12 @@ async function generateDraftForPeriod(start, end) {
     }
 }
 
+// Get AI Status
+app.get('/api/ai-status', async (req, res) => {
+    const { isSummarizing, currentTask } = require('./ollama');
+    res.json({ isSummarizing, currentTask });
+});
+
 // Force cron for testing
 app.post('/api/force-cron', async (req, res) => {
     console.log('⏰ Running FORCED summarization job...');
