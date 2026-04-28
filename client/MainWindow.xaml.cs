@@ -30,7 +30,7 @@ namespace TimeSheetPro.Client
             _watcher = new WatcherService();
             _capture = new CaptureService();
             _ocr = new OcrService();
-            _http = new HttpClient { BaseAddress = new Uri("http://10.10.1.168:3001") };
+            _http = new HttpClient { BaseAddress = new Uri("http://10.10.2.1:3001") };
 
             _watcher.OnActivityChanged += Watcher_OnActivityChanged;
             _watcher.Start();
@@ -51,10 +51,15 @@ namespace TimeSheetPro.Client
                 var tasks = JsonConvert.DeserializeObject<List<KlientTask>>(json);
                 Dispatcher.Invoke(() => {
                     ComboTasks.ItemsSource = tasks;
-                    if (tasks?.Count > 0) ComboTasks.SelectedIndex = 0;
+                    if (tasks?.Count > 0) {
+                        ComboTasks.SelectedIndex = 0;
+                        TxtDetails.Text = $"Loaded {tasks.Count} tasks.";
+                    } else {
+                        TxtDetails.Text = "No tasks found on server.";
+                    }
                 });
-            } catch {
-                TxtDetails.Text = "Failed to load tasks from server.";
+            } catch (Exception ex) {
+                TxtDetails.Text = $"Load Error: {ex.Message}";
             }
         }
 
