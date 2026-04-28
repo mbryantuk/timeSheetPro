@@ -59,14 +59,14 @@ app.post('/api/tasks/import/csv', async (req, res) => {
   if (!csv) return res.status(400).json({ error: 'No CSV data provided' });
 
   try {
-    const lines = csv.split('\\n');
+    const lines = csv.split('\n');
     let imported = 0;
     
     for (let line of lines) {
       if (!line.trim()) continue;
       
       // Data is tab-separated: Owner Name, Project Status, Project, Klient Task: Task Name, Account
-      const parts = line.split('\\t').map(s => s.trim());
+      const parts = line.split('\t').map(s => s.trim());
       
       if (parts.length >= 5) {
         const projectName = parts[2];
