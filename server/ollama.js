@@ -9,7 +9,7 @@ const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'mistral';
 const PROMPT_FILE = path.join(__dirname, 'PROMPT.txt');
 
 /**
- * Summarizes a batch of activities into a Klient-compatible comment.
+ * Summarizes a batch of activities, optionally using vision for poor OCR context.
  */
 async function summarizeActivities(activities, calendarContext = '') {
   if (!activities || activities.length === 0) return null;
@@ -23,24 +23,31 @@ async function summarizeActivities(activities, calendarContext = '') {
     console.error('Failed to read PROMPT.txt:', err.message);
   }
 
+  // Fallback logic: check if OCR is too sparse
+  const lastActivity = activities[activities.length - 1];
+  let images = [];
+  
+  // If OCR text is short (e.g. < 50 chars), grab the latest image
+  if (lastActivity.ocr_text && lastActivity.ocr_text.length < 50 && lastActivity.image_data) {
+      console.log('🧐 OCR text sparse, triggering vision analysis...');
+      images = [lastActivity.image_data]; // Ollama expects an array of base64 strings
+  }
+
   const activitySummary = activities.map(a => 
-    `- [${a.process_name}] ${a.window_title} (${Math.round(a.duration_ms / 1000 / 60)} mins) ${a.ocr_text ? 'Context: ' + a.ocr_text.substring(0, 100) : ''}`
+    `- [${a.process_name}] ${a.window_title} (${Math.round(a.duration_ms / 1000 / 60)} mins)`
   ).join('\n');
 
-  let userPrompt = `Summarize these activities:\n${activitySummary}`;
-  if (calendarContext) {
-      userPrompt += `\n\n### IMPORTANT CALENDAR CONTEXT\nThe user had the following calendar events scheduled during this time. Please use these to accurately name meetings or projects if they relate to the raw activity logs:\n${calendarContext}`;
-  }
+  const userPrompt = `Summarize these activities:\n${activitySummary}${calendarContext ? `\n\n### CALENDAR CONTEXT\n${calendarContext}` : ''}`;
 
   try {
     const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
-      model: OLLAMA_MODEL,
+      model: images.length > 0 ? 'llava' : OLLAMA_MODEL,
       system: systemPrompt,
       prompt: userPrompt,
+      images: images,
       stream: false
     });
 
-    // DeepSeek-R1 specific cleaning: Remove <think> tags if they leak through
     let cleaned = response.data.response.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
     return cleaned;
   } catch (error) {
