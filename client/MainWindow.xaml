@@ -40,7 +40,17 @@
             <!-- Task Selector -->
             <StackPanel Grid.Row="1" VerticalAlignment="Center" Margin="0,10">
                 <TextBlock Text="ACTIVE KLIENT TASK" Foreground="#FF007ACC" FontSize="9" FontWeight="Bold" Margin="0,0,0,4"/>
-                <ComboBox x:Name="ComboTasks" Background="#FF333337" Foreground="White" BorderBrush="#FF3E3E3E" BorderThickness="1" Height="28" VerticalContentAlignment="Center">
+                <ComboBox x:Name="ComboTasks" 
+                          Background="#FF333337" 
+                          Foreground="White" 
+                          BorderBrush="#FF3E3E3E" 
+                          BorderThickness="1" 
+                          Height="30" 
+                          VerticalContentAlignment="Center">
+                    <ComboBox.Resources>
+                        <SolidColorBrush x:Key="{x:Static SystemColors.WindowBrushKey}" Color="#FF333337" />
+                        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#FF007ACC" />
+                    </ComboBox.Resources>
                     <ComboBox.ItemTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding Name}" Foreground="White" Padding="4,2"/>
