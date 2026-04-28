@@ -66,15 +66,15 @@
 - README instructions for local setup.
 - Build the web UI dashboard for reviewing and assigning drafts.
 
-## Sprint 2 Plan (Integration & Automation)
-### Task 2.1: Salesforce OAuth & Sync (Dev)
-- Implement Salesforce OAuth 2.0 flow.
-- Securely store access tokens.
-- Implement the actual POST request in `SalesforceService` to sync approved entries to Klient.
+## Sprint 2 Plan (Refinement & Export)
+### Task 2.1: Data Export & Reporting (Dev)
+- Remove automatic Salesforce sync logic.
+- Implement a "Weekly Export" feature in the Web UI (e.g., CSV or a clean copy-paste view).
+- Group approved timesheet entries by Klient Project/Task for easy manual entry.
 
 ### Task 2.2: Refine the UI (Dev)
-- Improve the Web Dashboard to show sync status (Draft, Synced, Error).
-- Add error handling and user feedback for failed syncs.
+- Improve the Web Dashboard to show a "Weekly Summary" view alongside "Pending Drafts".
+- Allow users to edit the AI-generated notes before marking an entry as "Approved".
 
 ### Task 2.3: Packaging (Architect)
-- Create a simple script or GitHub action to package the Windows Client into a downloadable `.zip` or `.exe`.
+- Package the Windows Client into a simple downloadable `.zip` or `.exe` for easy deployment.

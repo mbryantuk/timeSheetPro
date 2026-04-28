@@ -33,9 +33,9 @@ We will align our local SQLite schema with Klient's `Krow__Timesheet_Split__c` o
 - **Comment:** Professional summary (`Krow__Notes__c`)
 
 ## Integration Strategy
-- **Authentication:** Salesforce OAuth 2.0 (Stored securely in local system keychain, NOT in `.env`).
-- **Sync Method:** POST to `/services/data/vXX.0/sobjects/Krow__Timesheet_Split__c/`.
-- **Validation:** Ensure the `Krow__Date__c` matches the work day and falls within an open timesheet period.
+- **Sync Method:** Manual entry at the end of the week.
+- **Reporting:** The Web UI will group approved entries by Project, Task, Date, and Total Hours, providing a clean copy-paste view matching the Klient interface.
+- **Validation:** The AI handles the heavy lifting of summarizing notes and adding context (e.g., Puzzel customers, Calendar meetings) to ensure entries are professional and justified.
 
 
 ## Key Workflows
