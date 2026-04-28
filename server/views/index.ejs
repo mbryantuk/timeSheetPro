@@ -5,17 +5,19 @@
     <title>TimeSheetPro | Architect Dashboard</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css">
     <style>
-        body { display: flex; height: 100vh; margin: 0; }
-        #sidebar { width: 250px; background: #222; padding: 20px; border-right: 1px solid #444; }
-        #main-content { flex: 1; padding: 20px; overflow-y: auto; }
+        body { display: flex; height: 100vh; margin: 0; font-family: sans-serif; }
+        #sidebar { width: 250px; background: #222; padding: 20px; border-right: 1px solid #444; flex-shrink: 0; }
+        #main-content { flex: 1; padding: 40px; overflow-y: auto; max-width: 1000px; }
         .view { display: none; }
         .view.active { display: block; }
-        .task-card { border: 1px solid #444; padding: 15px; margin-bottom: 10px; border-radius: 8px; background: #1a1a1a; }
-        .summary-text { width: 100%; height: 60px; font-style: italic; color: #fff; background: #000; border: 1px solid #555; border-radius: 4px; padding: 8px; margin: 10px 0; }
-        .hours { font-weight: bold; color: #007acc; }
-        nav button { display: block; width: 100%; margin-bottom: 10px; text-align: left; padding: 10px; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #444; padding: 10px; text-align: left; }
+        .task-card { border: 1px solid #444; padding: 20px; margin-bottom: 20px; border-radius: 8px; background: #1a1a1a; }
+        .summary-text { width: 100%; height: 80px; color: #fff; background: #000; border: 1px solid #555; border-radius: 4px; padding: 10px; margin: 10px 0; }
+        .hours { font-weight: bold; color: #007acc; font-size: 1.2em; }
+        nav button { display: block; width: 100%; margin-bottom: 10px; text-align: left; padding: 12px; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #444; padding: 12px; text-align: left; }
+        th { background-color: #333; }
+        textarea { width: 100%; min-height: 100px; font-family: monospace; background: #222; color: #fff; border: 1px solid #555; padding: 8px; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -24,7 +26,7 @@
         <button onclick="showView('drafts')">📋 Pending Drafts</button>
         <button onclick="showView('export')">📊 Weekly Export</button>
         <button onclick="showView('tasks')">⚙️ Manage Tasks</button>
-        <button onclick="showView('prompt')">🧠 AI Prompt</button>
+        <button onclick="showView('prompt')">🧠 AI Personality</button>
     </nav>
 
     <main id="main-content">
@@ -40,16 +42,20 @@
 
         <div id="tasks" class="view">
             <h1>Task Management</h1>
-            <textarea id="csv-data" style="width:100%; height:100px;" placeholder="Paste Klient data here..."></textarea>
-            <button onclick="importCSV()">Import Tasks</button>
-            <span id="import-status"></span>
-            <h3>Active Tasks</h3>
-            <div id="active-tasks-list"></div>
+            <div style="margin-bottom: 30px;">
+                <label>Paste Klient Data (Owner, Status, Project, Task, Account):</label>
+                <textarea id="csv-data" placeholder="Matt Bryant	In Progress	ProjectName	TaskName	AccountName"></textarea>
+                <button onclick="importCSV()">Import Tasks</button>
+                <span id="import-status"></span>
+            </div>
+            
+            <h3>Active Tasks Database</h3>
+            <div id="active-tasks-list">Loading...</div>
         </div>
 
         <div id="prompt" class="view">
             <h1>AI Personality</h1>
-            <textarea id="prompt-data" style="width:100%; height:200px;"></textarea>
+            <textarea id="prompt-data"></textarea>
             <button onclick="savePrompt()">Save Prompt</button>
             <span id="prompt-status"></span>
         </div>
@@ -66,7 +72,13 @@
             const res = await fetch('/api/tasks');
             allTasks = await res.json();
             const container = document.getElementById('active-tasks-list');
-            container.innerHTML = allTasks.map(t => `<p>${t.name} <small style="color:#666;">(${t.id})</small></p>`).join('');
+            container.innerHTML = `
+                <table>
+                    <thead><tr><th>Project</th><th>Task</th><th>ID</th></tr></thead>
+                    <tbody>
+                        ${allTasks.map(t => `<tr><td>${t.project_id}</td><td>${t.name}</td><td>${t.id}</td></tr>`).join('')}
+                    </tbody>
+                </table>`;
         }
 
         async function loadDrafts() {
