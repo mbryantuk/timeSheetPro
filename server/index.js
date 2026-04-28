@@ -214,19 +214,15 @@ app.post('/api/force-cron', async (req, res) => {
     }
 });
 
-// Hourly Cron Job to generate drafts
-cron.schedule('0 * * * *', async () => {
-    console.log('⏰ Running hourly summarization job...');
-    const end = new Date();
-    const start = new Date(end.getTime() - 60 * 60 * 1000);
-
+// Helper function to generate a draft for a specific period
+async function generateDraftForPeriod(start, end) {
     try {
         const activities = await db('activities')
           .where('timestamp', '>=', start.toISOString())
           .andWhere('timestamp', '<=', end.toISOString());
 
         if (activities.length === 0) {
-          console.log('No activities found for the last hour.');
+          console.log('No activities found for the given period.');
           return;
         }
 
@@ -246,10 +242,28 @@ cron.schedule('0 * * * *', async () => {
           raw_data: JSON.stringify(activities.map(a => `[\${a.process_name}] \${a.window_title} (\${Math.round(a.duration_ms / 1000)}s)`)),
           status: 'draft'
         });
-        console.log(`✅ Hourly summary drafted: ${summary.substring(0, 50)}...`);
+        console.log(`✅ Summary drafted: ${summary.substring(0, 50)}...`);
     } catch (e) {
-        console.error('Hourly summarization failed:', e.message);
+        console.error('Summarization failed:', e.message);
     }
+}
+
+// Hourly Cron Job (Runs at minute 0, from 10 AM to 5 PM, Mon-Fri)
+// Summarizes the previous 60 minutes (e.g., 9:00 - 10:00)
+cron.schedule('0 10-17 * * 1-5', async () => {
+    console.log('⏰ Running hourly working-hours summarization job...');
+    const end = new Date();
+    const start = new Date(end.getTime() - 60 * 60 * 1000);
+    await generateDraftForPeriod(start, end);
+});
+
+// Half-hour Cron Job (Runs at 5:30 PM, Mon-Fri)
+// Summarizes the final 30 minutes of the day (17:00 - 17:30)
+cron.schedule('30 17 * * 1-5', async () => {
+    console.log('⏰ Running final 5:30 PM summarization job...');
+    const end = new Date();
+    const start = new Date(end.getTime() - 30 * 60 * 1000); // 30 minutes ago
+    await generateDraftForPeriod(start, end);
 });
 
 async function start() {

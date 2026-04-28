@@ -44,6 +44,17 @@ namespace TimeSheetPro.Client
         {
             Dispatcher.Invoke(async () =>
             {
+                var now = DateTime.Now;
+                var timeOfDay = now.TimeOfDay;
+                bool isWeekday = now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday;
+                bool isWorkingHours = timeOfDay >= new TimeSpan(9, 0, 0) && timeOfDay <= new TimeSpan(17, 30, 0);
+
+                if (!isWeekday || !isWorkingHours)
+                {
+                    TxtStatus.Text = "Outside Working Hours";
+                    return; // Do not capture OCR or send heartbeat
+                }
+
                 TxtStatus.Text = activity.ProcessName;
 
                 // Capture and OCR
