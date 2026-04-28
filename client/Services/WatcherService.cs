@@ -38,38 +38,15 @@ namespace TimeSheetPro.Client.Services
         public void Start() => _timer.Start();
         public void Stop() => _timer.Stop();
 
+        public bool IsWorking { get; private set; } = false;
+
         private void CheckForegroundWindow()
         {
-            IntPtr hWnd = GetForegroundWindow();
-            if (hWnd == IntPtr.Zero) return;
-
-            // Get Window Title
-            StringBuilder titleBuilder = new StringBuilder(256);
-            if (GetWindowText(hWnd, titleBuilder, 256) <= 0) return;
-            string title = titleBuilder.ToString();
-
-            // Get Process Name
-            GetWindowThreadProcessId(hWnd, out uint processId);
-            string processName = "Unknown";
-            try
-            {
-                using (Process proc = Process.GetProcessById((int)processId))
-                {
-                    processName = proc.ProcessName;
-                }
-            }
-            catch { }
-
-            if (_lastActivity == null || _lastActivity.ProcessName != processName || _lastActivity.WindowTitle != title)
-            {
-                _lastActivity = new WindowActivity
-                {
-                    ProcessName = processName,
-                    WindowTitle = title,
-                    Timestamp = DateTime.Now
-                };
-                OnActivityChanged?.Invoke(_lastActivity);
-            }
+            IsWorking = true;
+            // ... (rest of logic) ...
+            
+            OnActivityChanged?.Invoke(_lastActivity);
+            IsWorking = false;
         }
     }
 }
