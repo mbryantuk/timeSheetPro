@@ -135,8 +135,48 @@
         async function loadWeeklyExport() {
             const res = await fetch('/api/export/weekly');
             const data = await res.json();
-            document.getElementById('export-list').innerHTML = `<table><tr><th>Date</th><th>Project</th><th>Task</th><th>Hours</th><th>Notes</th></tr>` + 
-                data.map(i => `<tr><td>${new Date(i.date).toLocaleDateString()}</td><td>${i.project_name}</td><td>${i.task_name}</td><td>${i.total_hours.toFixed(2)}</td><td>${i.combined_notes}</td></tr>`).join('') + `</table>`;
+            const container = document.getElementById('export-list');
+            
+            let tableHtml = `
+                <table id="klient-table" style="width:100%; border-collapse: collapse; font-family: sans-serif;">
+                    <thead>
+                        <tr style="background: #333;">
+                            <th>Account</th>
+                            <th>Project</th>
+                            <th>Task</th>
+                            <th>Hours</th>
+                            <th>Comment</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            data.forEach(item => {
+                tableHtml += `
+                    <tr>
+                        <td class="account-cell">...</td>
+                        <td>${item.project_name}</td>
+                        <td>${item.task_name}</td>
+                        <td class="hours">${item.total_hours.toFixed(2)}</td>
+                        <td style="white-space: pre-wrap;">${item.combined_notes}</td>
+                    </tr>
+                `;
+            });
+
+            tableHtml += `</tbody></table>
+            <button onclick="copyToClipboard()" style="margin-top: 20px; background: #007acc;">Copy for Klient</button>`;
+            container.innerHTML = tableHtml;
+        }
+
+        function copyToClipboard() {
+            const table = document.getElementById("klient-table");
+            let range = document.createRange();
+            range.selectNode(table);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+            document.execCommand("copy");
+            window.getSelection().removeAllRanges();
+            alert("Copied to clipboard! Ready to paste into Klient.");
         }
 
         async function loadRecent() {
