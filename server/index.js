@@ -160,7 +160,13 @@ app.get('/api/settings/prompt', (req, res) => {
         const prompt = fs.readFileSync(path.join(__dirname, 'PROMPT.txt'), 'utf8');
         res.json({ prompt });
     } catch (e) {
-        res.status(500).json({ error: 'Could not read PROMPT.txt' });
+        // Fallback for docker environment if __dirname is different
+        try {
+            const prompt = fs.readFileSync('/app/PROMPT.txt', 'utf8');
+            res.json({ prompt });
+        } catch (e2) {
+            res.status(500).json({ error: 'Could not read PROMPT.txt' });
+        }
     }
 });
 
@@ -168,7 +174,9 @@ app.get('/api/settings/prompt', (req, res) => {
 app.post('/api/settings/prompt', (req, res) => {
     const { prompt } = req.body;
     try {
-        fs.writeFileSync(path.join(__dirname, 'PROMPT.txt'), prompt);
+        // Try both locations
+        const p = fs.existsSync(path.join(__dirname, 'PROMPT.txt')) ? path.join(__dirname, 'PROMPT.txt') : '/app/PROMPT.txt';
+        fs.writeFileSync(p, prompt);
         res.json({ success: true });
     } catch (e) {
         res.status(500).json({ error: 'Could not save PROMPT.txt' });
