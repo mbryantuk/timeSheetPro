@@ -280,6 +280,7 @@ async function logCron(message) {
 
 // Helper function to generate a draft for a specific period
 async function generateDraftForPeriod(start, end) {
+    const { getMeetingsForTimeframe } = require('./calendar');
     try {
         const activities = await db('activities')
           .where('timestamp', '>=', start.toISOString())
