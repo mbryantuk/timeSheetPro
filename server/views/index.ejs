@@ -57,6 +57,11 @@
             <div id="cron-logs-list">Loading...</div>
         </div>
 
+        <div id="ollama-ps" class="view">
+            <h1>Ollama Status (Memory/Models)</h1>
+            <div id="ollama-ps-list">Loading...</div>
+        </div>
+
         <div id="tasks" class="view">
             <h1>Task Management</h1>
             <div style="margin-bottom: 30px;">
@@ -192,6 +197,23 @@
                 </table>`;
         }
 
+        async function loadOllamaPS() {
+            const res = await fetch('/api/ollama-ps');
+            const data = await res.json();
+            const container = document.getElementById('ollama-ps-list');
+            if (data.models && data.models.length > 0) {
+                container.innerHTML = `
+                    <table style="width:100%; border-collapse: collapse;">
+                        <thead><tr><th>Model</th><th>Size (VRAM)</th><th>Expires</th></tr></thead>
+                        <tbody>
+                            ${data.models.map(m => `<tr><td>${m.name}</td><td>${(m.size_vram / 1024 / 1024 / 1024).toFixed(2)} GB</td><td>${new Date(m.expires_at).toLocaleTimeString()}</td></tr>`).join('')}
+                        </tbody>
+                    </table>`;
+            } else {
+                container.innerHTML = '<p>No models currently loaded in memory.</p>';
+            }
+        }
+
         function toggleImage(id) {
             const el = document.getElementById('img-' + id);
             el.style.display = el.style.display === 'none' ? 'block' : 'none';
@@ -261,7 +283,7 @@
             alert('AI summarization aborted.');
         }
 
-        loadDrafts(); loadWeeklyExport(); loadPrompt(); loadRecent(); loadCronLogs();
+        loadDrafts(); loadWeeklyExport(); loadPrompt(); loadRecent(); loadCronLogs(); loadOllamaPS();
         setInterval(updateAIStatus, 2000);
     </script>
 </body>
