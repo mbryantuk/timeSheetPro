@@ -208,8 +208,8 @@ app.get('/api/drafts', async (req, res) => {
   try {
     const drafts = await db('timesheet_entries')
       .leftJoin('tasks', 'timesheet_entries.task_id', 'tasks.id')
-      .leftJoin('projects', 'tasks.project_id', 'projects.id')
-      .where('status', 'draft')
+      .leftJoin('projects', 'timesheet_entries.project_id', 'projects.id')
+      .where('timesheet_entries.status', 'draft')
       .select(
         'timesheet_entries.id',
         'timesheet_entries.date',
@@ -219,9 +219,10 @@ app.get('/api/drafts', async (req, res) => {
         'timesheet_entries.raw_data',
         'projects.name as project_name',
         'tasks.name as task_name'
-      ).orderBy('created_at', 'desc');
+      ).orderBy('timesheet_entries.created_at', 'desc');
     res.json(drafts);
   } catch (error) {
+    console.error('Drafts Error:', error);
     res.status(500).json({ error: error.message });
   }
 });
