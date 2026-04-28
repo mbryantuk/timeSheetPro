@@ -72,12 +72,18 @@
         async function loadTasks() {
             const res = await fetch('/api/tasks');
             allTasks = await res.json();
+            const projectRes = await fetch('/api/projects');
+            const projects = await projectRes.json();
+            
             const container = document.getElementById('active-tasks-list');
             container.innerHTML = `
                 <table>
                     <thead><tr><th>Account</th><th>Project</th><th>Task</th><th>Owner</th><th>Status</th></tr></thead>
                     <tbody>
-                        ${allTasks.map(t => `<tr><td>${t.account_name}</td><td>${t.project_id}</td><td>${t.name}</td><td>${t.owner}</td><td>${t.status}</td></tr>`).join('')}
+                        ${allTasks.map(t => {
+                            const prj = projects.find(p => p.id === t.project_id);
+                            return `<tr><td>${t.account_name}</td><td>${prj ? prj.name : t.project_id}</td><td>${t.name}</td><td>${t.owner}</td><td>${t.status}</td></tr>`;
+                        }).join('')}
                     </tbody>
                 </table>`;
         }
