@@ -59,7 +59,8 @@ app.post('/api/tasks/import/csv', async (req, res) => {
   if (!csv) return res.status(400).json({ error: 'No CSV data provided' });
 
   try {
-    const lines = csv.split('\n');
+    // Handle standard newlines or escaped literal '\n' from JSON curl payloads
+    const lines = csv.replace(/\\n/g, '\n').replace(/\\t/g, '\t').split('\n');
     let imported = 0;
     
     for (let line of lines) {
@@ -74,7 +75,7 @@ app.post('/api/tasks/import/csv', async (req, res) => {
         const accountName = parts[4];
         
         // Skip header row if pasted
-        if (projectName === 'Project' && taskName === 'Klient Task: Task Name') continue;
+        if (projectName === 'Project' || taskName === 'Klient Task: Task Name') continue;
         
         // Generate IDs based on the text to prevent duplicates
         const accountId = 'ACC-' + Buffer.from(accountName).toString('base64').substring(0, 10).toUpperCase();
