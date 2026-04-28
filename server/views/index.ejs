@@ -32,15 +32,26 @@
 
     <div id="settings-container" style="margin-top: 40px; padding: 20px; border: 1px solid #444; border-radius: 8px; background-color: #111;">
         <h2>⚙️ Task Management</h2>
-        <p>Import your Klient tasks manually so you can assign your time to them.</p>
         
-        <div style="margin-bottom: 10px;">
-            <label style="display:block; font-weight:bold; margin-bottom:5px;">Paste Klient Data (Copy directly from Klient list view)</label>
-            <p style="font-size: 0.8em; color: #aaa; margin-top: 0;">Expected columns: Owner, Status, <strong>Project</strong>, <strong>Task Name</strong>, <strong>Account</strong></p>
-            <textarea id="csv-data" style="width: 100%; height: 100px; font-family: monospace; background: #222; color: #fff; border: 1px solid #555; padding: 8px; border-radius: 4px;" placeholder="Matt Bryant	In Progress	4424103 - OakTree Mobility	Project Acceptance	OakTree Mobility"></textarea>
+        <div style="display: flex; gap: 20px;">
+            <div style="flex: 1;">
+                <p>Import your Klient tasks manually so you can assign your time to them.</p>
+                <div style="margin-bottom: 10px;">
+                    <label style="display:block; font-weight:bold; margin-bottom:5px;">Paste Klient Data (Copy directly from Klient list view)</label>
+                    <p style="font-size: 0.8em; color: #aaa; margin-top: 0;">Expected columns: Owner, Status, <strong>Project</strong>, <strong>Task Name</strong>, <strong>Account</strong></p>
+                    <textarea id="csv-data" style="width: 100%; height: 100px; font-family: monospace; background: #222; color: #fff; border: 1px solid #555; padding: 8px; border-radius: 4px;" placeholder="Matt Bryant	In Progress	4424103 - OakTree Mobility	Project Acceptance	OakTree Mobility"></textarea>
+                </div>
+                <button onclick="importCSV()">Import Tasks</button>
+                <span id="import-status" style="margin-left: 10px; color: limegreen;"></span>
+            </div>
+            
+            <div style="flex: 1; border-left: 1px solid #444; padding-left: 20px;">
+                <h3>Active Klient Tasks</h3>
+                <div id="active-tasks-list" style="max-height: 200px; overflow-y: auto; background: #222; border: 1px solid #555; border-radius: 4px; padding: 10px;">
+                    Loading tasks...
+                </div>
+            </div>
         </div>
-        <button onclick="importCSV()">Import Tasks</button>
-        <span id="import-status" style="margin-left: 10px; color: limegreen;"></span>
     </div>
 
     <script>
@@ -75,6 +86,15 @@
         async function loadTasks() {
             const res = await fetch('/api/tasks');
             allTasks = await res.json();
+            
+            const taskContainer = document.getElementById('active-tasks-list');
+            if (allTasks.length === 0) {
+                taskContainer.innerHTML = '<p style="color:#888;">No tasks imported yet.</p>';
+            } else {
+                taskContainer.innerHTML = '<ul style="margin: 0; padding-left: 20px; font-size: 0.9em;">' + 
+                    allTasks.map(t => `<li><strong>${t.name}</strong><br><span style="color:#888; font-size:0.8em;">${t.id}</span></li>`).join('') +
+                    '</ul>';
+            }
         }
 
         async function loadDrafts() {
