@@ -54,6 +54,42 @@ app.post('/api/tasks', async (req, res) => {
   res.status(201).json({ id, name, project_id });
 });
 
+app.post('/api/tasks/import/csv', async (req, res) => {
+  const { csv } = req.body;
+  if (!csv) return res.status(400).json({ error: 'No CSV data provided' });
+
+  try {
+    const lines = csv.split('\\n');
+    let imported = 0;
+    
+    // Skip header if exists or just process all lines
+    for (let line of lines) {
+      if (!line.trim()) continue;
+      
+      const parts = line.split(',').map(s => s.trim());
+      // Expecting: AccountName, ProjectName, TaskName
+      if (parts.length >= 3) {
+        const accountName = parts[0];
+        const projectName = parts[1];
+        const taskName = parts[2];
+        
+        const accountId = 'ACC-' + accountName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10).toUpperCase();
+        const projectId = 'PRJ-' + projectName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10).toUpperCase();
+        const taskId = 'TSK-' + taskName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10).toUpperCase() + '-' + Date.now().toString().slice(-4);
+
+        await db('accounts').insert({ id: accountId, name: accountName }).onConflict('id').merge();
+        await db('projects').insert({ id: projectId, name: projectName, account_id: accountId }).onConflict('id').merge();
+        await db('tasks').insert({ id: taskId, name: taskName, project_id: projectId }).onConflict('id').merge();
+        imported++;
+      }
+    }
+    
+    res.json({ success: true, imported });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Activity Heartbeat
 app.post('/api/activities', async (req, res) => {
   const { process_name, window_title, url, ocr_text, duration_ms, task_id } = req.body;
