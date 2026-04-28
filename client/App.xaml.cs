@@ -99,12 +99,14 @@ namespace TimeSheetPro.Client
                 // Capture and OCR
                 byte[] screenshot = _capture.CaptureActiveWindow();
                 string ocrText = await _ocr.ExtractTextFromImageAsync(screenshot);
+                string base64Image = Convert.ToBase64String(screenshot);
 
                 var payload = new
                 {
                     process_name = activity.ProcessName,
                     window_title = activity.WindowTitle,
                     ocr_text = ocrText,
+                    image_data = base64Image,
                     duration_ms = 5000,
                     task_id = (string?)null
                 };

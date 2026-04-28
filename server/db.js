@@ -44,10 +44,16 @@ async function initDb() {
       table.string('window_title');
       table.string('url');
       table.text('ocr_text');
+      table.text('image_data');
       table.integer('duration_ms');
       table.string('task_id').references('id').inTable('tasks'); // Link activity to a task
     });
+  } else if (!(await db.schema.hasColumn('activities', 'image_data'))) {
+    await db.schema.alterTable('activities', (table) => {
+      table.text('image_data');
+    });
   }
+
 
   // Finalized Entries for Klient
   if (!(await db.schema.hasTable('timesheet_entries'))) {

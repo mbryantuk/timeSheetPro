@@ -97,12 +97,13 @@ app.post('/api/tasks/import/csv', async (req, res) => {
 
 // Activity Heartbeat
 app.post('/api/activities', async (req, res) => {
-  const { process_name, window_title, url, ocr_text, duration_ms, task_id } = req.body;
+  const { process_name, window_title, url, ocr_text, image_data, duration_ms, task_id } = req.body;
   const [id] = await db('activities').insert({
     process_name,
     window_title,
     url,
     ocr_text,
+    image_data,
     duration_ms,
     task_id
   });
