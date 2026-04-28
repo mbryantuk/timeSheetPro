@@ -39,10 +39,11 @@ We will align our local SQLite schema with Klient's `Krow__Timesheet_Split__c` o
 
 
 ## Key Workflows
-1. **Context Selection:** The Windows Client allows the user to select the active **Account**, **Project**, and **Task** from a list (synced from Klient or defined locally).
-2. **Activity Capture:** While a task is active, the client monitors metadata and OCR context.
-3. **AI Summarization:** Ollama processes the raw activity into a professional "Comment" that fits the Klient format.
-4. **Validation:** User reviews the AI-generated comment and confirms the time before it is finalized for Klient entry.
+1. **Context Selection:** The Windows Client acts as a lightweight sensor, running silently in the background.
+2. **Activity Capture:** While a task is active, the client monitors metadata and OCR context. **Note: Tracking is strictly restricted to working hours (Mon-Fri, 9:00 AM - 5:30 PM).** Outside of these hours, the sensor is completely dormant (no OCR, no heartbeats) to protect user privacy.
+3. **AI Summarization:** The Node.js server runs an hourly cron job (10 AM to 5 PM, with a final catch-up at 5:30 PM) to process the raw activity using DeepSeek-R1, generating a professional "Comment" that fits the Klient format. It also integrates Outlook Calendar context.
+4. **Validation:** User reviews the AI-generated comment via the Web Dashboard (`http://<server-ip>:3001/`), assigns it to a Klient project/task, and confirms the time.
+5. **Export:** At the end of the week, the user copies the formatted text from the "Weekly Export" table on the Web Dashboard into Salesforce Klient.
 
 ## Technical Architecture Deep Dive
 
