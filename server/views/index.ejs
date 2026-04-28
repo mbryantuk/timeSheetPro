@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TimeSheetPro Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css">
+    <style>
+        .task-card { border: 1px solid #444; padding: 15px; margin-bottom: 10px; border-radius: 8px; }
+        .summary-text { font-style: italic; color: #aaa; margin: 10px 0; }
+        .hours { font-weight: bold; color: #007acc; }
+    </style>
+</head>
+<body>
+    <h1>🕒 TimeSheetPro</h1>
+    <p>Review and sync your automated timesheet entries.</p>
+    
+    <div id="report-container">
+        <h2>Today's Activity</h2>
+        <div id="tasks-list">Loading daily report...</div>
+    </div>
+
+    <script>
+        async function loadReport() {
+            const today = new Date().toISOString().split('T')[0];
+            const res = await fetch(`/api/reports/daily?date=\${today}`);
+            const data = await res.json();
+            
+            const container = document.getElementById('tasks-list');
+            container.innerHTML = '';
+
+            if (data.length === 0) {
+                container.innerHTML = '<p>No activity recorded today yet.</p>';
+                return;
+            }
+
+            data.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'task-card';
+                div.innerHTML = `
+                    <h3>\${item.project_name} - \${item.task_name}</h3>
+                    <p class="hours">Total Time: \${item.hours} hours</p>
+                    <p class="summary-text">"\${item.summary}"</p>
+                    <button onclick="syncTask('\${item.task_id}')">Sync to Klient</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        async function syncTask(taskId) {
+            alert('Sync to Salesforce feature coming next!');
+        }
+
+        loadReport();
+        setInterval(loadReport, 60000); // Refresh every minute
+    </script>
+</body>
+</html>

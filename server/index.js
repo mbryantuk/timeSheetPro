@@ -8,9 +8,15 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.set('view engine', 'ejs');
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
+
+// Web UI Dashboard
+app.get('/', (req, res) => {
+  res.render('index');
+});
 
 // Hierarchy Endpoints
 app.get('/api/accounts', async (req, res) => {
