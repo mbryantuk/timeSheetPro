@@ -1,6 +1,8 @@
 services:
   timesheet-server:
-    build: ./server
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: timesheet-pro-server
     ports:
       - "3001:3000"
