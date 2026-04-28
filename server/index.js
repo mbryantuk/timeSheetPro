@@ -313,13 +313,20 @@ async function generateDraftForPeriod(start, end) {
     }
 }
 
+// Get AI Status
+app.get('/api/ai-status', async (req, res) => {
+    const { isSummarizing, currentTask } = require('./ollama');
+    res.json({ isSummarizing, currentTask });
+});
+
 // Get Ollama PS (running models)
 app.get('/api/ollama-ps', async (req, res) => {
     try {
         const response = await axios.get(`${OLLAMA_URL}/api/ps`);
         res.json(response.data);
     } catch (error) {
-        res.status(500).json({ error: 'Ollama is offline or not responding' });
+        console.error('Ollama PS Error:', error.message);
+        res.json({ models: [] }); // Return empty array instead of 500
     }
 });
 
