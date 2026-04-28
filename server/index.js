@@ -308,8 +308,21 @@ async function generateDraftForPeriod(start, end) {
     }
 }
 
+// Force cron for testing
+app.post('/api/force-cron', async (req, res) => {
+    console.log('⏰ Running FORCED summarization job...');
+    const end = new Date();
+    const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
+
+    try {
+        await generateDraftForPeriod(start, end);
+        res.json({ message: '✅ Forced summarization triggered.' });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // Hourly Cron Job (Runs at minute 0, from 10 AM to 5 PM, Mon-Fri)
-// Summarizes the previous 60 minutes (e.g., 9:00 - 10:00)
 cron.schedule('0 10-17 * * 1-5', async () => {
     console.log('⏰ Running hourly working-hours summarization job...');
     const end = new Date();
