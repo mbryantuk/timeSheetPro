@@ -24,14 +24,14 @@ namespace TimeSheetPro.Client.Services
         [DllImport("user32.dll")]
         private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
 
-        private Timer _timer;
+        private System.Timers.Timer _timer;
         private WindowActivity? _lastActivity;
 
         public event Action<WindowActivity>? OnActivityChanged;
 
         public WatcherService(double intervalMs = 5000)
         {
-            _timer = new Timer(intervalMs);
+            _timer = new System.Timers.Timer(intervalMs);
             _timer.Elapsed += (s, e) => CheckForegroundWindow();
         }
 
