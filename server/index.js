@@ -74,26 +74,31 @@ app.get('/api/reports/daily', async (req, res) => {
 
   try {
     const report = await db('activities')
-      .join('tasks', 'activities.task_id', 'tasks.id')
-      .join('projects', 'tasks.project_id', 'projects.id')
+      .leftJoin('tasks', 'activities.task_id', 'tasks.id')
+      .leftJoin('projects', 'tasks.project_id', 'projects.id')
       .where('activities.timestamp', '>=', start)
       .andWhere('activities.timestamp', '<=', end)
       .select(
         'projects.name as project_name',
         'tasks.name as task_name',
-        'tasks.id as task_id'
+        'activities.task_id'
       )
       .sum('duration_ms as total_ms')
-      .groupBy('tasks.id');
+      .groupBy('activities.task_id');
 
     // Add AI summaries for each group
     for (let item of report) {
         const activities = await db('activities')
-            .where('task_id', item.task_id)
+            .where(builder => {
+                 if (item.task_id) builder.where('task_id', item.task_id);
+                 else builder.whereNull('task_id');
+            })
             .andWhere('timestamp', '>=', start)
             .andWhere('timestamp', '<=', end);
         
         item.hours = parseFloat((item.total_ms / (1000 * 60 * 60)).toFixed(2));
+        item.project_name = item.project_name || 'Unassigned';
+        item.task_name = item.task_name || 'General Activity';
         item.summary = await summarizeActivities(activities);
     }
 

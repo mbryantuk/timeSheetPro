@@ -65,7 +65,7 @@ namespace TimeSheetPro.Client
                     string json = JsonConvert.SerializeObject(payload);
                     await _http.PostAsync("/api/activities", new StringContent(json, Encoding.UTF8, "application/json"));
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     TxtStatus.Text = "Sync Error";
                 }
