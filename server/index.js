@@ -15,14 +15,17 @@ app.post('/api/abort-summary', (req, res) => {
     res.json({ message: 'AI generation aborted.' });
 });
 
-app.set('view engine', 'ejs');
+const path = require('path');
+
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(morgan('dev'));
 
-// Web UI Dashboard
+// Serve React static files
+app.use(express.static(path.join(__dirname, '../web-ui/dist')));
+
 app.get('/', (req, res) => {
-  res.render('index');
+  res.sendFile(path.join(__dirname, '../web-ui/dist/index.html'));
 });
 
 // Hierarchy Endpoints
