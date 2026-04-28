@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const cron = require('node-cron');
+const axios = require('axios');
 const { db, initDb } = require('./db');
 const { summarizeActivities, abortGeneration } = require('./ollama');
 
