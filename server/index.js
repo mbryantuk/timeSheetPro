@@ -15,13 +15,26 @@ const PORT = process.env.PORT || 3000;
 
 app.set('view engine', 'ejs');
 app.use(cors());
-app.use(express.json({ limit: '10mb' }));
 app.use(morgan('dev'));
+app.use(express.json({ limit: '100mb' }));
 
-// Web UI Dashboard
-app.get('/', (req, res) => {
-  res.render('index');
-});
+// Serve React built UI
+let uiBuildPath = path.join(__dirname, '../web-ui/dist');
+if (fs.existsSync(path.join(__dirname, 'dist'))) {
+  uiBuildPath = path.join(__dirname, 'dist');
+}
+
+if (fs.existsSync(uiBuildPath)) {
+  app.use(express.static(uiBuildPath));
+  app.get('/', (req, res) => {
+    res.sendFile(path.join(uiBuildPath, 'index.html'));
+  });
+} else {
+  // Fallback to old EJS UI if React build doesn't exist
+  app.get('/', (req, res) => {
+    res.render('index');
+  });
+}
 
 // Hierarchy Endpoints
 app.get('/api/accounts', async (req, res) => {
@@ -87,9 +100,14 @@ app.post('/api/tasks/import/csv', async (req, res) => {
 });
 
 app.post('/api/activities', async (req, res) => {
-  const { process_name, window_title, url, ocr_text, image_data, duration_ms, task_id } = req.body;
-  const [id] = await db('activities').insert({ process_name, window_title, url, ocr_text, image_data, duration_ms, task_id });
-  res.status(201).json({ id });
+  try {
+    const { process_name, window_title, url, ocr_text, image_data, duration_ms, task_id } = req.body;
+    const [id] = await db('activities').insert({ process_name, window_title, url, ocr_text, image_data, duration_ms, task_id });
+    res.status(201).json({ id });
+  } catch (error) {
+    console.error('API Activities Error:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 app.get('/api/reports/daily', async (req, res) => {
@@ -188,6 +206,50 @@ app.get('/api/cron-logs', async (req, res) => {
         const logs = await db('cron_logs').orderBy('timestamp', 'desc').limit(20);
         res.json(logs);
     } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.get('/api/activities', async (req, res) => {
+    try {
+        const limit = req.query.limit || 50;
+        const activities = await db('activities')
+            .orderBy('timestamp', 'desc')
+            .limit(limit);
+        res.json(activities);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/ai-prompt', (req, res) => {
+    try {
+        const prompt = fs.readFileSync(path.join(__dirname, 'PROMPT.txt'), 'utf8');
+        res.json({ prompt });
+    } catch (e) {
+        res.status(500).json({ error: 'Could not read PROMPT.txt' });
+    }
+});
+
+app.post('/api/ai-prompt', (req, res) => {
+    const { prompt } = req.body;
+    try {
+        const p = fs.existsSync(path.join(__dirname, 'PROMPT.txt')) ? path.join(__dirname, 'PROMPT.txt') : '/app/PROMPT.txt';
+        fs.writeFileSync(p, prompt);
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: 'Could not save PROMPT.txt' });
+    }
+});
+
+app.post('/api/summarize-manual', async (req, res) => {
+    const { hoursAgo } = req.body;
+    const end = new Date();
+    const start = new Date(end.getTime() - (hoursAgo || 1) * 60 * 60 * 1000);
+    try {
+        await generateDraftForPeriod(start, end);
+        res.json({ message: '✅ Manual summarization triggered.' });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
 });
 
 app.get('/api/settings/prompt', (req, res) => {
