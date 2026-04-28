@@ -26,6 +26,7 @@
         <h2>TimeSheetPro</h2>
         <div id="ai-status" style="padding: 10px; border: 1px solid #444; border-radius: 4px; background: #333; margin-bottom: 20px;">
             <p id="ai-status-text" style="font-size: 0.8em; margin: 0;">AI Status: Checking...</p>
+            <p id="net-status" style="font-size: 0.7em; color: #888; margin-top:5px;">🌐 Sensor: Idle</p>
         </div>
         <button onclick="showView('drafts')">📋 Pending Drafts</button>
         <button onclick="showView('export')">📊 Weekly Export</button>
@@ -219,13 +220,35 @@
             el.style.display = el.style.display === 'none' ? 'block' : 'none';
         }
 
+        let lastActivityTime = 0;
+
+        async function updateNetworkStatus() {
+            const res = await fetch('/api/activities/recent');
+            const data = await res.json();
+            const latest = data[0];
+            const now = new Date().getTime();
+
+            const netStatus = document.getElementById('net-status');
+            if (latest && (now - new Date(latest.timestamp).getTime() < 10000)) {
+                netStatus.innerText = '🌐 Sensor: Active';
+                netStatus.style.color = 'limegreen';
+            } else {
+                netStatus.innerText = '🌐 Sensor: Inactive';
+                netStatus.style.color = '#888';
+            }
+        }
+
         async function updateAIStatus() {
             const res = await fetch('/api/ai-status');
             const data = await res.json();
             document.getElementById('ai-status-text').innerText = data.isSummarizing ? `🤖 ${data.currentTask}` : '🤖 AI: Idle';
         }
 
-        async function importCSV() {
+        setInterval(() => {
+            updateAIStatus();
+            updateNetworkStatus();
+        }, 2000);
+
             const csv = document.getElementById('csv-data').value;
             const res = await fetch('/api/tasks/import/csv', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ csv }) });
             if (res.ok) { alert('Imported!'); loadTasks(); }
