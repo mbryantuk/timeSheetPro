@@ -49,29 +49,29 @@
                 // Build task dropdown
                 let optionsHtml = '<option value="">-- Select Klient Task --</option>';
                 allTasks.forEach(t => {
-                    optionsHtml += `<option value="\${t.id}">\${t.name}</option>`;
+                    optionsHtml += `<option value="${t.id}">${t.name}</option>`;
                 });
 
                 div.innerHTML = `
-                    <p style="font-size:0.8em; color:#888;">Generated: \${new Date(item.created_at).toLocaleString()}</p>
-                    <p class="hours">Total Time: \${item.hours} hours</p>
-                    <p class="summary-text">"\${item.notes}"</p>
+                    <p style="font-size:0.8em; color:#888;">Generated: ${new Date(item.created_at).toLocaleString()}</p>
+                    <p class="hours">Total Time: ${item.hours} hours</p>
+                    <p class="summary-text">"${item.notes}"</p>
                     
-                    <select id="task-select-\${item.id}">\${optionsHtml}</select>
-                    <button onclick="approveDraft('\${item.id}')">Approve & Assign</button>
+                    <select id="task-select-${item.id}">${optionsHtml}</select>
+                    <button onclick="approveDraft('${item.id}')">Approve & Assign</button>
                 `;
                 container.appendChild(div);
             });
         }
 
         async function approveDraft(id) {
-            const taskId = document.getElementById(`task-select-\${id}`).value;
+            const taskId = document.getElementById(`task-select-${id}`).value;
             if (!taskId) {
                 alert('Please select a Klient Task first!');
                 return;
             }
 
-            const res = await fetch(`/api/drafts/\${id}/approve`, {
+            const res = await fetch(`/api/drafts/${id}/approve`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ task_id: taskId })
