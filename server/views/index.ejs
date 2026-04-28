@@ -249,6 +249,7 @@
             updateNetworkStatus();
         }, 2000);
 
+        async function importCSV() {
             const csv = document.getElementById('csv-data').value;
             const res = await fetch('/api/tasks/import/csv', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ csv }) });
             if (res.ok) { alert('Imported!'); loadTasks(); }
