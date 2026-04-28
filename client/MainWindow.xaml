@@ -5,6 +5,13 @@
         WindowStyle="None" AllowsTransparency="True" Background="#EE1E1E1E"
         Topmost="True" ShowInTaskbar="False" ResizeMode="NoResize"
         MouseLeftButtonDown="Window_MouseLeftButtonDown">
+    <Window.ContextMenu>
+        <ContextMenu>
+            <MenuItem Header="Refresh Tasks" Click="BtnRefresh_Click"/>
+            <Separator/>
+            <MenuItem Header="Exit" Click="Close_Click"/>
+        </ContextMenu>
+    </Window.ContextMenu>
     <Border BorderBrush="#FF3E3E3E" BorderThickness="1" CornerRadius="8">
         <Grid Margin="12">
             <Grid.RowDefinitions>
@@ -18,12 +25,16 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel>
                     <TextBlock x:Name="TxtStatus" Text="Tracking: [Idle]" Foreground="White" FontWeight="Bold" FontSize="14" TextTrimming="CharacterEllipsis"/>
                     <TextBlock x:Name="TxtDetails" Text="Initializing..." Foreground="#FFAAAAAA" FontSize="11" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
                 </StackPanel>
-                <Ellipse x:Name="StatusDot" Grid.Column="1" Width="12" Height="12" Fill="LimeGreen" VerticalAlignment="Top"/>
+                
+                <Ellipse x:Name="StatusDot" Grid.Column="1" Width="10" Height="10" Fill="LimeGreen" VerticalAlignment="Center" Margin="10,0"/>
+                
+                <Button Grid.Column="2" Content="×" Foreground="White" Background="Transparent" BorderThickness="0" FontSize="16" VerticalAlignment="Top" Padding="5,0" Cursor="Hand" Click="Close_Click"/>
             </Grid>
 
             <!-- Task Selector -->

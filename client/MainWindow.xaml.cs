@@ -83,6 +83,12 @@ namespace TimeSheetPro.Client
             RefreshDailyTotal();
         }
 
+        private void Close_Click(object sender, RoutedEventArgs e)
+        {
+            _watcher.Stop();
+            this.Close();
+        }
+
         private async void Watcher_OnActivityChanged(WindowActivity activity)
         {
             Dispatcher.Invoke(async () =>
@@ -107,6 +113,10 @@ namespace TimeSheetPro.Client
                         duration_ms = 5000, // Sync heartbeat interval
                         task_id = selectedTask?.Id
                     };
+
+                    // Local Logging
+                    string logLine = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {activity.ProcessName} | {activity.WindowTitle} | OCR: {ocrText.Replace("\n", " ").Replace("\r", "")}";
+                    System.IO.File.AppendAllLines("activity_log.txt", new[] { logLine });
 
                     string json = JsonConvert.SerializeObject(payload);
                     await _http.PostAsync("/api/activities", new StringContent(json, Encoding.UTF8, "application/json"));
