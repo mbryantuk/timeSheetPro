@@ -1,0 +1,21 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": ".NET Core Launch (WPF)",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}/client/TimeSheetPro.Client.csproj",
+            "preLaunchTask": "build-client"
+        },
+        {
+            "name": "Docker: Node Server",
+            "type": "node",
+            "request": "attach",
+            "port": 9229,
+            "address": "localhost",
+            "localRoot": "${workspaceFolder}/server",
+            "remoteRoot": "/app"
+        }
+    ]
+}

@@ -1,0 +1,19 @@
+# Node.js
+node_modules/
+npm-debug.log
+.env
+server/timesheet.sqlite
+
+# C# / .NET
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.cache
+*.pdb
+
+# OS
+.DS_Store
+Thumbs.db
+server/data/
