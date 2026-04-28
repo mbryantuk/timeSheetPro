@@ -30,7 +30,7 @@ namespace TimeSheetPro.Client
             _watcher = new WatcherService();
             _capture = new CaptureService();
             _ocr = new OcrService();
-            _http = new HttpClient { BaseAddress = new Uri("http://localhost:3001") };
+            _http = new HttpClient { BaseAddress = new Uri("http://10.10.1.168:3001") };
 
             _watcher.OnActivityChanged += Watcher_OnActivityChanged;
             _watcher.Start();
