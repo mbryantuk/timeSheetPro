@@ -337,6 +337,18 @@ cron.schedule('0 10-17 * * 1-5', async () => {
     await generateDraftForPeriod(start, end);
 });
 
+// Get recent raw activities
+app.get('/api/activities/recent', async (req, res) => {
+  try {
+    const activities = await db('activities')
+      .orderBy('timestamp', 'desc')
+      .limit(50);
+    res.json(activities);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Half-hour Cron Job (Runs at 5:30 PM, Mon-Fri)
 // Summarizes the final 30 minutes of the day (17:00 - 17:30)
 cron.schedule('30 17 * * 1-5', async () => {

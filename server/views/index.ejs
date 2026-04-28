@@ -26,6 +26,7 @@
         <h2>TimeSheetPro</h2>
         <button onclick="showView('drafts')">📋 Pending Drafts</button>
         <button onclick="showView('export')">📊 Weekly Export</button>
+        <button onclick="showView('recent')">🕒 Recent Activity</button>
         <button onclick="showView('tasks')">⚙️ Manage Tasks</button>
         <button onclick="showView('prompt')">🧠 AI Personality</button>
     </nav>
@@ -39,6 +40,11 @@
         <div id="export" class="view">
             <h1>Weekly Export</h1>
             <div id="export-list">Loading...</div>
+        </div>
+
+        <div id="recent" class="view">
+            <h1>Recent Raw Activity</h1>
+            <div id="recent-list">Loading...</div>
         </div>
 
         <div id="tasks" class="view">
@@ -84,6 +90,19 @@
                             const prj = projects.find(p => p.id === t.project_id);
                             return `<tr><td>${t.account_name}</td><td>${prj ? prj.name : t.project_id}</td><td>${t.name}</td><td>${t.owner}</td><td>${t.status}</td></tr>`;
                         }).join('')}
+                    </tbody>
+                </table>`;
+        }
+
+        async function loadRecent() {
+            const res = await fetch('/api/activities/recent');
+            const data = await res.json();
+            const container = document.getElementById('recent-list');
+            container.innerHTML = `
+                <table>
+                    <thead><tr><th>Time</th><th>Process</th><th>Window Title</th></tr></thead>
+                    <tbody>
+                        ${data.map(a => `<tr><td>${new Date(a.timestamp).toLocaleTimeString()}</td><td>${a.process_name}</td><td>${a.window_title}</td></tr>`).join('')}
                     </tbody>
                 </table>`;
         }
@@ -136,7 +155,7 @@
             loadDrafts(); loadWeeklyExport();
         }
 
-        loadDrafts(); loadWeeklyExport(); loadPrompt();
+        loadDrafts(); loadWeeklyExport(); loadPrompt(); loadRecent();
     </script>
 </body>
 </html>
