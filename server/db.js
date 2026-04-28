@@ -32,7 +32,16 @@ async function initDb() {
       table.string('id').primary(); // Salesforce Krow__Task__c ID
       table.string('name').notNullable();
       table.string('project_id').references('id').inTable('projects');
+      table.string('owner');
+      table.string('status');
+      table.string('account_name');
     });
+  } else if (!(await db.schema.hasColumn('tasks', 'owner'))) {
+      await db.schema.alterTable('tasks', (table) => {
+          table.string('owner');
+          table.string('status');
+          table.string('account_name');
+      });
   }
 
   // Activity Tracking

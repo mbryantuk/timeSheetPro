@@ -75,9 +75,9 @@
             const container = document.getElementById('active-tasks-list');
             container.innerHTML = `
                 <table>
-                    <thead><tr><th>Project</th><th>Task</th><th>ID</th></tr></thead>
+                    <thead><tr><th>Account</th><th>Project</th><th>Task</th><th>Owner</th><th>Status</th></tr></thead>
                     <tbody>
-                        ${allTasks.map(t => `<tr><td>${t.project_id}</td><td>${t.name}</td><td>${t.id}</td></tr>`).join('')}
+                        ${allTasks.map(t => `<tr><td>${t.account_name}</td><td>${t.project_id}</td><td>${t.name}</td><td>${t.owner}</td><td>${t.status}</td></tr>`).join('')}
                     </tbody>
                 </table>`;
         }
