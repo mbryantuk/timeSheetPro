@@ -8,9 +8,8 @@ const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'mistral';
 
 const PROMPT_FILE = path.join(__dirname, 'PROMPT.txt');
 
-/**
- * Summarizes a batch of activities, optionally using vision for poor OCR context.
- */
+let abortController = null;
+
 async function summarizeActivities(activities, calendarContext = '') {
   if (!activities || activities.length === 0) return null;
 
@@ -23,14 +22,11 @@ async function summarizeActivities(activities, calendarContext = '') {
     console.error('Failed to read PROMPT.txt:', err.message);
   }
 
-  // Fallback logic: check if OCR is too sparse
   const lastActivity = activities[activities.length - 1];
   let images = [];
-  
-  // If OCR text is short (e.g. < 50 chars), grab the latest image
   if (lastActivity.ocr_text && lastActivity.ocr_text.length < 50 && lastActivity.image_data) {
       console.log('🧐 OCR text sparse, triggering vision analysis...');
-      images = [lastActivity.image_data]; // Ollama expects an array of base64 strings
+      images = [lastActivity.image_data];
   }
 
   const activitySummary = activities.map(a => 
@@ -39,6 +35,7 @@ async function summarizeActivities(activities, calendarContext = '') {
 
   const userPrompt = `Summarize these activities:\n${activitySummary}${calendarContext ? `\n\n### CALENDAR CONTEXT\n${calendarContext}` : ''}`;
 
+  abortController = new AbortController();
   try {
     const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
       model: images.length > 0 ? 'llava' : OLLAMA_MODEL,
@@ -46,14 +43,26 @@ async function summarizeActivities(activities, calendarContext = '') {
       prompt: userPrompt,
       images: images,
       stream: false
-    });
+    }, { signal: abortController.signal });
 
     let cleaned = response.data.response.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
     return cleaned;
   } catch (error) {
+    if (axios.isCancel(error)) {
+        console.log('🤖 AI Generation aborted by user.');
+        return "[Aborted] Generation stopped.";
+    }
     console.error('Ollama summarization failed:', error.message);
     return "[Manual Entry Required] AI summarization failed.";
+  } finally {
+      abortController = null;
   }
 }
 
-module.exports = { summarizeActivities };
+function abortGeneration() {
+    if (abortController) {
+        abortController.abort();
+    }
+}
+
+module.exports = { summarizeActivities, abortGeneration };

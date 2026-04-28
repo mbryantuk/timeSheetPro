@@ -3,7 +3,13 @@ const cors = require('cors');
 const morgan = require('morgan');
 const cron = require('node-cron');
 const { db, initDb } = require('./db');
-const { summarizeActivities } = require('./ollama');
+const { summarizeActivities, abortGeneration } = require('./ollama');
+
+// Abort ongoing AI generation
+app.post('/api/abort-summary', (req, res) => {
+    abortGeneration();
+    res.json({ message: 'AI generation aborted.' });
+});
 const { getMeetingsForTimeframe } = require('./calendar');
 require('dotenv').config();
 

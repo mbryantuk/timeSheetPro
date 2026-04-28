@@ -35,6 +35,7 @@
     <main id="main-content">
         <div id="drafts" class="view active">
             <h1>Pending Drafts</h1>
+            <button onclick="abortAI()" style="background:#cc0000;">Cancel Active AI Summary</button>
             <div id="drafts-list">Loading...</div>
         </div>
 
@@ -210,6 +211,11 @@
             const notes = document.getElementById('notes-' + id).value;
             await fetch('/api/drafts/' + id + '/approve', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ task_id: taskId, notes: notes }) });
             loadDrafts(); loadWeeklyExport();
+        }
+
+        async function abortAI() {
+            await fetch('/api/abort-summary', { method: 'POST' });
+            alert('AI summarization aborted.');
         }
 
         loadDrafts(); loadWeeklyExport(); loadPrompt(); loadRecent(); loadCronLogs();
