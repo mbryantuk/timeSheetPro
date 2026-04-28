@@ -54,8 +54,39 @@
         </div>
     </div>
 
+    <div id="prompt-container" style="margin-top: 40px; padding: 20px; border: 1px solid #444; border-radius: 8px; background-color: #111;">
+        <h2>🧠 AI Personality (System Prompt)</h2>
+        <p>Define how the AI should summarize your work. Context: You are a <strong>Solution Architect at Puzzel</strong>.</p>
+        <textarea id="prompt-data" style="width: 100%; height: 200px; font-family: monospace; background: #222; color: #fff; border: 1px solid #555; padding: 8px; border-radius: 4px;"></textarea>
+        <button onclick="savePrompt()">Save Prompt</button>
+        <span id="prompt-status" style="margin-left: 10px; color: limegreen;"></span>
+    </div>
+
     <script>
-        let allTasks = [];
+        async function loadPrompt() {
+            const res = await fetch('/api/settings/prompt');
+            const data = await res.json();
+            document.getElementById('prompt-data').value = data.prompt;
+        }
+
+        async function savePrompt() {
+            const prompt = document.getElementById('prompt-data').value;
+            const res = await fetch('/api/settings/prompt', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt })
+            });
+            
+            const status = document.getElementById('prompt-status');
+            if (res.ok) {
+                status.innerText = '✅ Prompt saved!';
+            } else {
+                status.innerText = '❌ Save failed.';
+                status.style.color = 'red';
+            }
+            setTimeout(() => { status.innerText = ''; }, 3000);
+        }
+
 
         async function importCSV() {
             const csv = document.getElementById('csv-data').value;
@@ -214,6 +245,7 @@
 
         loadDrafts();
         loadWeeklyExport();
+        loadPrompt();
     </script>
 </body>
 </html>

@@ -152,8 +152,29 @@ app.get('/api/reports/daily', async (req, res) => {
   }
 });
 
-// Health Check
-app.get('/health', (req, res) => res.send('OK'));
+const fs = require('fs');
+
+// Settings: Get Prompt
+app.get('/api/settings/prompt', (req, res) => {
+    try {
+        const prompt = fs.readFileSync(path.join(__dirname, 'PROMPT.txt'), 'utf8');
+        res.json({ prompt });
+    } catch (e) {
+        res.status(500).json({ error: 'Could not read PROMPT.txt' });
+    }
+});
+
+// Settings: Update Prompt
+app.post('/api/settings/prompt', (req, res) => {
+    const { prompt } = req.body;
+    try {
+        fs.writeFileSync(path.join(__dirname, 'PROMPT.txt'), prompt);
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: 'Could not save PROMPT.txt' });
+    }
+});
+
 
 // --- Hourly Sync & Approval Flow --- //
 
