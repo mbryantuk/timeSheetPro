@@ -138,14 +138,38 @@ app.get('/api/drafts', async (req, res) => {
   }
 });
 
+// Fetch approved entries for weekly export (Grouped by Task and Date)
+app.get('/api/export/weekly', async (req, res) => {
+  try {
+    const exports = await db('timesheet_entries')
+      .join('tasks', 'timesheet_entries.task_id', 'tasks.id')
+      .join('projects', 'tasks.project_id', 'projects.id')
+      .where('status', 'approved')
+      .select(
+        'projects.name as project_name',
+        'tasks.name as task_name',
+        'timesheet_entries.date'
+      )
+      .sum('timesheet_entries.hours as total_hours')
+      // Group concat notes for the same task on the same day if there are multiple approved drafts
+      .select(db.raw('GROUP_CONCAT(timesheet_entries.notes, "\\n- ") as combined_notes'))
+      .groupBy('tasks.id', 'timesheet_entries.date')
+      .orderBy('timesheet_entries.date', 'desc');
+      
+    res.json(exports);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Approve a draft
 app.put('/api/drafts/:id/approve', async (req, res) => {
   const { id } = req.params;
-  const { task_id } = req.body;
+  const { task_id, notes } = req.body;
   try {
     await db('timesheet_entries')
       .where('id', id)
-      .update({ status: 'approved', task_id });
+      .update({ status: 'approved', task_id, notes });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });

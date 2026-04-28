@@ -7,9 +7,12 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/dark.css">
     <style>
         .task-card { border: 1px solid #444; padding: 15px; margin-bottom: 10px; border-radius: 8px; }
-        .summary-text { font-style: italic; color: #aaa; margin: 10px 0; }
+        .summary-text { width: 100%; height: 80px; font-style: italic; color: #fff; background: #222; border: 1px solid #555; border-radius: 4px; padding: 8px; margin: 10px 0; }
         .hours { font-weight: bold; color: #007acc; }
         select { margin-right: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #444; padding: 10px; text-align: left; }
+        th { background-color: #333; }
     </style>
 </head>
 <body>
@@ -19,6 +22,12 @@
     <div id="report-container">
         <h2>Pending Drafts (Action Required)</h2>
         <div id="drafts-list">Loading pending drafts...</div>
+    </div>
+
+    <div id="export-container" style="margin-top: 40px;">
+        <h2>Weekly Export (Approved)</h2>
+        <p>Copy-paste these finalized entries into Klient at the end of the week.</p>
+        <div id="export-list">Loading weekly export...</div>
     </div>
 
     <script>
@@ -65,7 +74,7 @@
                 div.innerHTML = `
                     <p style="font-size:0.8em; color:#888;">Generated: ${new Date(item.created_at).toLocaleString()}</p>
                     <p class="hours">Total Time: ${item.hours} hours</p>
-                    <p class="summary-text">"${item.notes}"</p>
+                    <textarea id="notes-${item.id}" class="summary-text">${item.notes}</textarea>
                     ${rawHtml}
                     <select id="task-select-${item.id}">${optionsHtml}</select>
                     <button onclick="approveDraft('${item.id}')">Approve & Assign</button>
@@ -74,8 +83,57 @@
             });
         }
 
+        async function loadWeeklyExport() {
+            const res = await fetch('/api/export/weekly');
+            const data = await res.json();
+            
+            const container = document.getElementById('export-list');
+            container.innerHTML = '';
+
+            if (data.length === 0) {
+                container.innerHTML = '<p>No approved entries yet.</p>';
+                return;
+            }
+
+            let tableHtml = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Project</th>
+                            <th>Task</th>
+                            <th>Hours</th>
+                            <th>Comments</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            data.forEach(item => {
+                // Ensure daily comments are formatted nicely (e.g. if combined)
+                const comments = item.combined_notes.startsWith('- ') ? item.combined_notes : `- ${item.combined_notes}`;
+                tableHtml += `
+                    <tr>
+                        <td>${new Date(item.date).toLocaleDateString()}</td>
+                        <td>${item.project_name}</td>
+                        <td>${item.task_name}</td>
+                        <td class="hours">${item.total_hours.toFixed(2)}</td>
+                        <td style="white-space: pre-wrap;">${comments}</td>
+                    </tr>
+                `;
+            });
+
+            tableHtml += `
+                    </tbody>
+                </table>
+            `;
+            container.innerHTML = tableHtml;
+        }
+
         async function approveDraft(id) {
             const taskId = document.getElementById(`task-select-${id}`).value;
+            const notes = document.getElementById(`notes-${id}`).value;
+
             if (!taskId) {
                 alert('Please select a Klient Task first!');
                 return;
@@ -84,17 +142,19 @@
             const res = await fetch(`/api/drafts/${id}/approve`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ task_id: taskId })
+                body: JSON.stringify({ task_id: taskId, notes: notes })
             });
 
             if (res.ok) {
                 loadDrafts(); // Refresh list
+                loadWeeklyExport(); // Refresh export table
             } else {
                 alert('Failed to approve draft.');
             }
         }
 
         loadDrafts();
+        loadWeeklyExport();
     </script>
 </body>
 </html>

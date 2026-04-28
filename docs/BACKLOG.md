@@ -69,12 +69,13 @@
 ## Sprint 2 Plan (Refinement & Export)
 ### Task 2.1: Data Export & Reporting (Dev)
 - Remove automatic Salesforce sync logic.
-- Implement a "Weekly Export" feature in the Web UI (e.g., CSV or a clean copy-paste view).
-- Group approved timesheet entries by Klient Project/Task for easy manual entry.
+- Implement a "Weekly Export" feature in the Web UI: an On-Screen Table.
+- Group approved timesheet entries by Klient Project/Task AND Day.
+- Maintain Daily Comments format (one comment per day per task).
 
 ### Task 2.2: Refine the UI (Dev)
 - Improve the Web Dashboard to show a "Weekly Summary" view alongside "Pending Drafts".
-- Allow users to edit the AI-generated notes before marking an entry as "Approved".
+- Allow users to edit the AI-generated notes directly on the dashboard before clicking "Approve".
 
 ### Task 2.3: Packaging (Architect)
 - Package the Windows Client into a simple downloadable `.zip` or `.exe` for easy deployment.
