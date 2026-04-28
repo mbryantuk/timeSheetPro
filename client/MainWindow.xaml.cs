@@ -1,86 +1,51 @@
-using System;
-using System.Net.Http;
-using System.Text;
+using System.IO;
 using System.Windows;
-using System.Windows.Input;
-using Newtonsoft.Json;
-using TimeSheetPro.Client.Services;
 
 namespace TimeSheetPro.Client
 {
     public partial class MainWindow : Window
     {
-        private WatcherService _watcher;
-        private CaptureService _capture;
-        private OcrService _ocr;
-        private HttpClient _http;
-
         public MainWindow()
         {
             InitializeComponent();
-            
-            _watcher = new WatcherService();
-            _capture = new CaptureService();
-            _ocr = new OcrService();
-            _http = new HttpClient { BaseAddress = new Uri("http://10.10.2.1:3001") };
-
-            _watcher.OnActivityChanged += Watcher_OnActivityChanged;
-            _watcher.Start();
-
-            // Minimal position at bottom right
-            var workArea = SystemParameters.WorkArea;
-            this.Left = workArea.Right - this.Width - 10;
-            this.Top = workArea.Bottom - this.Height - 10;
+            TxtServerUrl.Text = App.ServerUrl;
+            LoadLogs();
         }
 
-        private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => DragMove();
-        
-        private void Close_Click(object sender, RoutedEventArgs e) {
-            _watcher.Stop();
-            this.Close();
-        }
-
-        private async void Watcher_OnActivityChanged(WindowActivity activity)
+        private void BtnSave_Click(object sender, RoutedEventArgs e)
         {
-            Dispatcher.Invoke(async () =>
+            ((App)Application.Current).UpdateServerUrl(TxtServerUrl.Text);
+            MessageBox.Show("Server URL updated successfully.", "TimeSheetPro", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void BtnRefreshLogs_Click(object sender, RoutedEventArgs e)
+        {
+            LoadLogs();
+        }
+
+        private void LoadLogs()
+        {
+            try
             {
-                var now = DateTime.Now;
-                var timeOfDay = now.TimeOfDay;
-                bool isWeekday = now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday;
-                bool isWorkingHours = timeOfDay >= new TimeSpan(9, 0, 0) && timeOfDay <= new TimeSpan(17, 30, 0);
-
-                if (!isWeekday || !isWorkingHours)
+                if (File.Exists("activity_log.txt"))
                 {
-                    TxtStatus.Text = "Outside Working Hours";
-                    return; // Do not capture OCR or send heartbeat
-                }
-
-                TxtStatus.Text = activity.ProcessName;
-
-                // Capture and OCR
-                byte[] screenshot = _capture.CaptureActiveWindow();
-                string ocrText = await _ocr.ExtractTextFromImageAsync(screenshot);
-
-                // Send to Server (Sensor-only mode)
-                try
-                {
-                    var payload = new
+                    // Read file allowing other processes to write to it
+                    using (var fs = new FileStream("activity_log.txt", FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                    using (var sr = new StreamReader(fs))
                     {
-                        process_name = activity.ProcessName,
-                        window_title = activity.WindowTitle,
-                        ocr_text = ocrText,
-                        duration_ms = 5000,
-                        task_id = (string?)null // Server will assign later or user will assign in Web UI
-                    };
-
-                    string json = JsonConvert.SerializeObject(payload);
-                    await _http.PostAsync("/api/activities", new StringContent(json, Encoding.UTF8, "application/json"));
+                        TxtLogs.Text = sr.ReadToEnd();
+                    }
+                    TxtLogs.ScrollToEnd();
                 }
-                catch (Exception)
+                else
                 {
-                    TxtStatus.Text = "Sync Error";
+                    TxtLogs.Text = "No activity logs found yet.";
                 }
-            });
+            }
+            catch
+            {
+                TxtLogs.Text = "Failed to read activity log.";
+            }
         }
     }
 }

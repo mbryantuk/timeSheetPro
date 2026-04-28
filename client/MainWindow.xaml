@@ -1,23 +1,37 @@
 <Window x:Class="TimeSheetPro.Client.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="TimeSheetPro" Height="40" Width="200"
-        WindowStyle="None" AllowsTransparency="True" Background="#EE1E1E1E"
-        Topmost="True" ShowInTaskbar="False" ResizeMode="NoResize"
-        MouseLeftButtonDown="Window_MouseLeftButtonDown">
-    <Border BorderBrush="#FF3E3E3E" BorderThickness="1" CornerRadius="20">
-        <Grid Margin="10,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            
-            <Ellipse x:Name="StatusDot" Width="8" Height="8" Fill="LimeGreen" VerticalAlignment="Center"/>
-            
-            <TextBlock x:Name="TxtStatus" Grid.Column="1" Text="Monitoring..." Foreground="White" FontSize="11" VerticalAlignment="Center" Margin="10,0" TextTrimming="CharacterEllipsis"/>
-            
-            <Button Grid.Column="2" Content="×" Foreground="#FF666666" Background="Transparent" BorderThickness="0" FontSize="14" VerticalAlignment="Center" Cursor="Hand" Click="Close_Click"/>
+        Title="TimeSheetPro Status" Height="450" Width="600"
+        Background="#FF1E1E1E" Foreground="White"
+        WindowStartupLocation="CenterScreen">
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Connection Settings -->
+        <GroupBox Header="Settings" Foreground="White" BorderBrush="#FF444444" Margin="0,0,0,15" Padding="10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="Server URL:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <TextBox x:Name="TxtServerUrl" Grid.Column="1" Background="#FF333333" Foreground="White" BorderThickness="1" BorderBrush="#FF555555" Padding="5" VerticalContentAlignment="Center"/>
+                <Button Grid.Column="2" Content="Save" Width="80" Margin="10,0,0,0" Background="#FF007ACC" Foreground="White" BorderThickness="0" Click="BtnSave_Click"/>
+            </Grid>
+        </GroupBox>
+
+        <!-- Logs Header -->
+        <Grid Grid.Row="1" Margin="0,0,0,5">
+            <TextBlock Text="Activity Log (activity_log.txt)" FontWeight="Bold"/>
+            <Button Content="Refresh" HorizontalAlignment="Right" Background="#FF444444" Foreground="White" BorderThickness="0" Padding="10,2" Click="BtnRefreshLogs_Click"/>
         </Grid>
-    </Border>
+
+        <!-- Logs Pane -->
+        <TextBox x:Name="TxtLogs" Grid.Row="2" Background="#FF222222" Foreground="#FFAAAAAA" FontFamily="Consolas" IsReadOnly="True" TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" BorderBrush="#FF444444"/>
+    </Grid>
 </Window>
