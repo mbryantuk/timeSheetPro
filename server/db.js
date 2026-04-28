@@ -57,6 +57,8 @@ async function initDb() {
       table.integer('duration_ms');
       table.string('task_id').references('id').inTable('tasks'); // Link activity to a task
     });
+  }
+
   if (!(await db.schema.hasTable('cron_logs'))) {
     await db.schema.createTable('cron_logs', (table) => {
       table.increments('id').primary();
