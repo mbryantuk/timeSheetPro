@@ -115,7 +115,16 @@
                                 <td>${new Date(a.timestamp).toLocaleTimeString()}</td>
                                 <td>${a.process_name}</td>
                                 <td>${a.window_title}</td>
-                                <td style="font-size: 0.8em; color: #aaa;">${a.ocr_text ? a.ocr_text.substring(0, 100) + '...' : 'N/A'}</td>
+                                <td>
+                                    <details>
+                                        <summary style="font-size: 0.8em; color: #aaa; cursor: pointer;">
+                                            ${a.ocr_text ? a.ocr_text.substring(0, 50) + '...' : 'N/A'}
+                                        </summary>
+                                        <div style="font-size: 0.8em; color: #fff; background: #333; padding: 10px; margin-top: 5px; border-radius: 4px;">
+                                            ${a.ocr_text ? a.ocr_text.replace(/\n/g, '<br>') : 'No text'}
+                                        </div>
+                                    </details>
+                                </td>
                                 <td>
                                     ${a.image_data ? `
                                         <button onclick="toggleImage('${a.id}')">View</button>
