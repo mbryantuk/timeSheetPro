@@ -62,20 +62,24 @@ app.post('/api/tasks/import/csv', async (req, res) => {
     const lines = csv.split('\\n');
     let imported = 0;
     
-    // Skip header if exists or just process all lines
     for (let line of lines) {
       if (!line.trim()) continue;
       
-      const parts = line.split(',').map(s => s.trim());
-      // Expecting: AccountName, ProjectName, TaskName
-      if (parts.length >= 3) {
-        const accountName = parts[0];
-        const projectName = parts[1];
-        const taskName = parts[2];
+      // Data is tab-separated: Owner Name, Project Status, Project, Klient Task: Task Name, Account
+      const parts = line.split('\\t').map(s => s.trim());
+      
+      if (parts.length >= 5) {
+        const projectName = parts[2];
+        const taskName = parts[3];
+        const accountName = parts[4];
         
-        const accountId = 'ACC-' + accountName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10).toUpperCase();
-        const projectId = 'PRJ-' + projectName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10).toUpperCase();
-        const taskId = 'TSK-' + taskName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10).toUpperCase() + '-' + Date.now().toString().slice(-4);
+        // Skip header row if pasted
+        if (projectName === 'Project' && taskName === 'Klient Task: Task Name') continue;
+        
+        // Generate IDs based on the text to prevent duplicates
+        const accountId = 'ACC-' + Buffer.from(accountName).toString('base64').substring(0, 10).toUpperCase();
+        const projectId = 'PRJ-' + Buffer.from(projectName).toString('base64').substring(0, 10).toUpperCase();
+        const taskId = 'TSK-' + Buffer.from(taskName).toString('base64').substring(0, 10).toUpperCase() + '-' + Buffer.from(projectName).toString('base64').substring(0, 4).toUpperCase();
 
         await db('accounts').insert({ id: accountId, name: accountName }).onConflict('id').merge();
         await db('projects').insert({ id: projectId, name: projectName, account_id: accountId }).onConflict('id').merge();
