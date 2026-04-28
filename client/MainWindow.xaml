@@ -67,10 +67,13 @@
             </StackPanel>
 
             <!-- Footer / Time Display -->
-            <Grid Grid.Row="2">
-                <TextBlock x:Name="TxtTodayTime" Text="Today: 0.00h" Foreground="White" VerticalAlignment="Center"/>
-                <Button Content="REFRESH" HorizontalAlignment="Right" Padding="8,2" Background="#FF3E3E3E" Foreground="White" BorderThickness="0" Click="BtnRefresh_Click"/>
-            </Grid>
+            <StackPanel Grid.Row="2">
+                <TextBlock x:Name="TxtLastSummary" Text="Summary will appear here..." Foreground="#FF888888" FontSize="10" TextWrapping="Wrap" Margin="0,5" MaxHeight="40"/>
+                <Grid>
+                    <TextBlock x:Name="TxtTodayTime" Text="Today: 0.00h" Foreground="White" VerticalAlignment="Center"/>
+                    <Button Content="REFRESH" HorizontalAlignment="Right" Padding="8,2" Background="#FF3E3E3E" Foreground="White" BorderThickness="0" Click="BtnRefresh_Click"/>
+                </Grid>
+            </StackPanel>
         </Grid>
     </Border>
 </Window>

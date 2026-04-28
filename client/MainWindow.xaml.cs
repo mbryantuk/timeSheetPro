@@ -69,10 +69,15 @@ namespace TimeSheetPro.Client
                 string today = DateTime.Now.ToString("yyyy-MM-dd");
                 var json = await _http.GetStringAsync($"/api/reports/daily?date={today}");
                 var report = JsonConvert.DeserializeObject<List<dynamic>>(json);
-                double totalHours = report?.Sum(item => (double)item.hours) ?? 0;
                 
+                double totalHours = report?.Sum(item => (double)item.hours) ?? 0;
+                var latestEntry = report?.LastOrDefault();
+
                 Dispatcher.Invoke(() => {
                     TxtTodayTime.Text = $"Today: {totalHours:F2}h";
+                    if (latestEntry != null) {
+                        TxtLastSummary.Text = $"Latest: {latestEntry.summary}";
+                    }
                 });
             } catch { }
         }
