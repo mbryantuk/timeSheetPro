@@ -27,6 +27,7 @@
         <button onclick="showView('drafts')">📋 Pending Drafts</button>
         <button onclick="showView('export')">📊 Weekly Export</button>
         <button onclick="showView('recent')">🕒 Recent Activity</button>
+        <button onclick="showView('cronlogs')">📜 Cron Logs</button>
         <button onclick="showView('tasks')">⚙️ Manage Tasks</button>
         <button onclick="showView('prompt')">🧠 AI Personality</button>
     </nav>
@@ -45,6 +46,11 @@
         <div id="recent" class="view">
             <h1>Recent Raw Activity</h1>
             <div id="recent-list">Loading...</div>
+        </div>
+
+        <div id="cronlogs" class="view">
+            <h1>Cron Job Logs</h1>
+            <div id="cron-logs-list">Loading...</div>
         </div>
 
         <div id="tasks" class="view">
@@ -90,6 +96,19 @@
                             const prj = projects.find(p => p.id === t.project_id);
                             return `<tr><td>${t.account_name}</td><td>${prj ? prj.name : t.project_id}</td><td>${t.name}</td><td>${t.owner}</td><td>${t.status}</td></tr>`;
                         }).join('')}
+                    </tbody>
+                </table>`;
+        }
+
+        async function loadCronLogs() {
+            const res = await fetch('/api/cron-logs');
+            const data = await res.json();
+            const container = document.getElementById('cron-logs-list');
+            container.innerHTML = `
+                <table style="width:100%; border-collapse: collapse;">
+                    <thead><tr><th>Time</th><th>Message</th></tr></thead>
+                    <tbody>
+                        ${data.map(l => `<tr><td>${new Date(l.timestamp).toLocaleString()}</td><td>${l.message}</td></tr>`).join('')}
                     </tbody>
                 </table>`;
         }
@@ -193,7 +212,8 @@
             loadDrafts(); loadWeeklyExport();
         }
 
-        loadDrafts(); loadWeeklyExport(); loadPrompt(); loadRecent();
+        loadDrafts(); loadWeeklyExport(); loadPrompt(); loadRecent(); loadCronLogs();
     </script>
+
 </body>
 </html>

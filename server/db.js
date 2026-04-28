@@ -57,11 +57,14 @@ async function initDb() {
       table.integer('duration_ms');
       table.string('task_id').references('id').inTable('tasks'); // Link activity to a task
     });
-  } else if (!(await db.schema.hasColumn('activities', 'image_data'))) {
-    await db.schema.alterTable('activities', (table) => {
-      table.text('image_data');
+  if (!(await db.schema.hasTable('cron_logs'))) {
+    await db.schema.createTable('cron_logs', (table) => {
+      table.increments('id').primary();
+      table.text('message');
+      table.timestamp('timestamp');
     });
   }
+
 
 
   // Finalized Entries for Klient

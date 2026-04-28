@@ -256,43 +256,23 @@ app.put('/api/drafts/:id/approve', async (req, res) => {
   }
 });
 
-// Force cron for testing
-app.post('/api/force-cron', async (req, res) => {
-    console.log('⏰ Running FORCED summarization job...');
-    const end = new Date();
-    // Grab everything in the last 24 hours for testing instead of just 1 hour
-    const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
-
+// Get cron job logs
+app.get('/api/cron-logs', async (req, res) => {
     try {
-        const activities = await db('activities')
-          .where('timestamp', '>=', start.toISOString())
-          .andWhere('timestamp', '<=', end.toISOString());
-
-        if (activities.length === 0) {
-          return res.json({ message: 'No activities found.' });
-        }
-
-        const meetings = await getMeetingsForTimeframe(start, end);
-        const calendarContext = meetings.join('\n');
-
-        const summary = await summarizeActivities(activities, calendarContext);
-
-        const totalMs = activities.reduce((sum, a) => sum + a.duration_ms, 0);
-        const decimalHours = parseFloat((totalMs / (1000 * 60 * 60)).toFixed(2));
-
-        await db('timesheet_entries').insert({
-          task_id: null,
-          date: start.toISOString().split('T')[0],
-          hours: decimalHours,
-          notes: summary,
-          raw_data: JSON.stringify(activities.map(a => `[\${a.process_name}] \${a.window_title} (\${Math.round(a.duration_ms / 1000)}s)`)),
-          status: 'draft'
-        });
-        res.json({ message: `✅ Hourly summary drafted: \${summary.substring(0, 50)}...` });
-    } catch (e) {
-        res.status(500).json({ error: e.message });
+        // Simple log: get recent cron activity from the database or just return a string log
+        // For now, let's keep it simple and just fetch logs if we can access the log file
+        // Or store a table of 'cron_logs' in the DB
+        const logs = await db('cron_logs').orderBy('timestamp', 'desc').limit(20);
+        res.json(logs);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 });
+
+// Update cron jobs to log to DB
+async function logCron(message) {
+    await db('cron_logs').insert({ message, timestamp: new Date().toISOString() });
+}
 
 // Helper function to generate a draft for a specific period
 async function generateDraftForPeriod(start, end) {
