@@ -13,14 +13,14 @@ namespace TimeSheetPro.Client
 {
     public partial class App : Application
     {
-        private NotifyIcon _notifyIcon;
-        private WatcherService _watcher;
-        private CaptureService _capture;
-        private OcrService _ocr;
-        private HttpClient _http;
+        private NotifyIcon? _notifyIcon;
+        private WatcherService? _watcher;
+        private CaptureService? _capture;
+        private OcrService? _ocr;
+        private HttpClient? _http;
         public static string ServerUrl { get; set; } = "http://10.10.2.1:3001";
         
-        private MainWindow _statusWindow;
+        private MainWindow? _statusWindow;
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -60,6 +60,7 @@ namespace TimeSheetPro.Client
 
         private void UpdateTrayIcon(bool isOk, string tooltip)
         {
+            if (_notifyIcon == null) return;
             Dispatcher.Invoke(() => {
                 _notifyIcon.Text = tooltip.Length > 63 ? tooltip.Substring(0, 60) + "..." : tooltip;
                 
@@ -79,6 +80,8 @@ namespace TimeSheetPro.Client
 
         private async void Watcher_OnActivityChanged(WindowActivity activity)
         {
+            if (_capture == null || _ocr == null || _http == null || _notifyIcon == null) return;
+
             var now = DateTime.Now;
             var timeOfDay = now.TimeOfDay;
             bool isWeekday = now.DayOfWeek >= DayOfWeek.Monday && now.DayOfWeek <= DayOfWeek.Friday;
@@ -151,7 +154,7 @@ namespace TimeSheetPro.Client
         private void ExitApplication()
         {
             _watcher?.Stop();
-            _notifyIcon.Visible = false;
+            if (_notifyIcon != null) _notifyIcon.Visible = false;
             Application.Current.Shutdown();
         }
     }

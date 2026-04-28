@@ -14,8 +14,8 @@ namespace TimeSheetPro.Client
 
         private void BtnSave_Click(object sender, RoutedEventArgs e)
         {
-            ((App)Application.Current).UpdateServerUrl(TxtServerUrl.Text);
-            MessageBox.Show("Server URL updated successfully.", "TimeSheetPro", MessageBoxButton.OK, MessageBoxImage.Information);
+            ((App)System.Windows.Application.Current).UpdateServerUrl(TxtServerUrl.Text);
+            System.Windows.MessageBox.Show("Server URL updated successfully.", "TimeSheetPro", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void BtnRefreshLogs_Click(object sender, RoutedEventArgs e)
