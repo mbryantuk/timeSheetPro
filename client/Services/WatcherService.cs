@@ -54,10 +54,18 @@ namespace TimeSheetPro.Client.Services
                     if (GetWindowText(handle, buff, nChars) > 0)
                     {
                         string windowTitle = buff.ToString();
-                        GetWindowThreadProcessId(handle, out uint processId);
-                        Process proc = Process.GetProcessById((int)processId);
+                        string processName = "Unknown";
+                        try
+                        {
+                            GetWindowThreadProcessId(handle, out uint processId);
+                            Process proc = Process.GetProcessById((int)processId);
+                            processName = proc.ProcessName;
+                        }
+                        catch
+                        {
+                            // Ignore access denied for elevated processes
+                        }
                         
-                        string processName = proc.ProcessName;
                         
                         // Check if window changed or it's been more than 5 minutes since last sync
                         if (_lastActivity == null || _lastActivity.ProcessName != processName || _lastActivity.WindowTitle != windowTitle || (DateTime.Now - _lastActivity.Timestamp).TotalMinutes >= 5)
