@@ -121,12 +121,15 @@ namespace TimeSheetPro.Client
                 if (response.IsSuccessStatusCode) {
                     UpdateTrayIcon(true, $"TimeSheetPro (Tracking: {activity.ProcessName})");
                 } else {
+                    string errorBody = await response.Content.ReadAsStringAsync();
+                    File.AppendAllLines("error_log.txt", new[] { $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] Server Error ({response.StatusCode}): {errorBody}" });
                     UpdateTrayIcon(false, "TimeSheetPro (Server Error)");
                 }
             }
             catch (Exception ex)
             {
-                UpdateTrayIcon(false, $"TimeSheetPro (Sync Error: {ex.Message})");
+                File.AppendAllLines("error_log.txt", new[] { $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] Sync Exception: {ex.ToString()}" });
+                UpdateTrayIcon(false, $"TimeSheetPro (Sync Error - check error_log.txt)");
             }
         }
 

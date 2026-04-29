@@ -272,20 +272,21 @@ async function logCron(message) {
     await db('cron_logs').insert({ message, timestamp: new Date().toISOString() });
 }
 
+let isCronSummarizing = false;
 async function generateDraftForPeriod(start, end) {
     const { getMeetingsForTimeframe } = require('./calendar');
-    if (isSummarizing) { return; }
-    isSummarizing = true;
+    if (isCronSummarizing) { return; }
+    isCronSummarizing = true;
     try {
         const activities = await db('activities').where('timestamp', '>=', start.toISOString()).andWhere('timestamp', '<=', end.toISOString());
-        if (activities.length === 0) { await logCron('No activities found.'); isSummarizing = false; return; }
+        if (activities.length === 0) { await logCron('No activities found.'); isCronSummarizing = false; return; }
         const meetings = await getMeetingsForTimeframe(start, end);
         const summary = await summarizeActivities(activities, meetings.join('\n'));
         const totalMs = activities.reduce((sum, a) => sum + a.duration_ms, 0);
         const decimalHours = parseFloat((totalMs / (1000 * 60 * 60)).toFixed(2));
-        await db('timesheet_entries').insert({ task_id: null, date: start.toISOString().split('T')[0], hours: decimalHours, notes: summary, raw_data: JSON.stringify(activities.map(a => `[\${a.process_name}] \${a.window_title}`)), status: 'draft' });
+        await db('timesheet_entries').insert({ task_id: null, date: start.toISOString().split('T')[0], hours: decimalHours, notes: summary, raw_data: JSON.stringify(activities.map(a => `[${a.process_name}] ${a.window_title}`)), status: 'draft' });
         await logCron(`✅ Summary drafted: ${summary.substring(0, 50)}...`);
-    } catch (e) { await logCron(`❌ Summarization failed: ${e.message}`); } finally { isSummarizing = false; }
+    } catch (e) { await logCron(`❌ Summarization failed: ${e.message}`); } finally { isCronSummarizing = false; }
 }
 
 cron.schedule('0 10-17 * * 1-5', async () => {
