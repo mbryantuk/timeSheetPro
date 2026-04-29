@@ -6,16 +6,20 @@ const SystemMonitor = () => {
   const [loading, setLoading] = useState(true);
   const [autoRefresh, setAutoRefresh] = useState(true);
 
+  const [clientStatus, setClientStatus] = useState(null);
+
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const [aiRes, ollamaRes] = await Promise.all([
+        const [aiRes, ollamaRes, clientRes] = await Promise.all([
           fetch('/api/ai-status').then(r => r.json()),
           fetch('/api/ollama-ps').then(r => r.json()),
+          fetch('/api/client-status').then(r => r.json())
         ]);
 
         setAiStatus(aiRes);
         setOllamaStatus(ollamaRes);
+        setClientStatus(clientRes);
         setLoading(false);
       } catch (error) {
         console.error('Failed to fetch status:', error);
@@ -165,7 +169,11 @@ const SystemMonitor = () => {
         <div className="stats-grid">
           {[
             { label: 'Backend', status: 'online', color: 'green' },
-            { label: 'Windows Client', status: 'active', color: 'green' },
+            { 
+              label: 'Windows Client', 
+              status: clientStatus?.active ? 'active' : 'offline', 
+              color: clientStatus?.active ? 'green' : 'red' 
+            },
             { label: 'Ollama', status: ollamaStatus ? 'running' : 'offline', color: ollamaStatus ? 'green' : 'red' },
             { label: 'Database', status: 'healthy', color: 'green' },
           ].map((item, idx) => (

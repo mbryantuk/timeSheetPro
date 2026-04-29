@@ -184,6 +184,17 @@ app.get('/api/ai-status', async (req, res) => {
     res.json({ isSummarizing, currentTask });
 });
 
+app.get('/api/client-status', async (req, res) => {
+    try {
+        const lastActivity = await db('activities').orderBy('timestamp', 'desc').first();
+        if (!lastActivity) return res.json({ active: false, last_seen: null });
+        const lastTime = new Date(lastActivity.timestamp);
+        const diffMs = new Date() - lastTime;
+        const active = diffMs < 5 * 60 * 1000; // 5 minutes
+        res.json({ active, last_seen: lastActivity.timestamp });
+    } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
 app.get('/api/ollama-ps', async (req, res) => {
     try {
         const response = await axios.get(`${OLLAMA_URL}/api/ps`);

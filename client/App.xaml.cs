@@ -94,25 +94,28 @@ namespace TimeSheetPro.Client
                 return;
             }
 
+            if (activity == null) return;
+
             try
             {
                 // Capture and OCR
                 byte[] screenshot = _capture.CaptureActiveWindow();
                 string ocrText = await _ocr.ExtractTextFromImageAsync(screenshot);
-                string base64Image = Convert.ToBase64String(screenshot);
+                string base64Image = screenshot != null ? Convert.ToBase64String(screenshot) : "";
 
                 var payload = new
                 {
-                    process_name = activity.ProcessName,
-                    window_title = activity.WindowTitle,
-                    ocr_text = ocrText,
+                    process_name = activity.ProcessName ?? "Unknown",
+                    window_title = activity.WindowTitle ?? "Unknown",
+                    ocr_text = ocrText ?? "",
                     image_data = base64Image,
                     duration_ms = 5000,
                     task_id = (string?)null
                 };
 
                 // Local Logging
-                string logLine = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {activity.ProcessName} | {activity.WindowTitle} | OCR: {ocrText.Replace("\n", " ").Replace("\r", "")}";
+                string safeOcrText = (ocrText ?? "").Replace("\n", " ").Replace("\r", "");
+                string logLine = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {activity.ProcessName} | {activity.WindowTitle} | OCR: {safeOcrText}";
                 File.AppendAllLines("activity_log.txt", new[] { logLine });
 
                 string json = JsonConvert.SerializeObject(payload);
