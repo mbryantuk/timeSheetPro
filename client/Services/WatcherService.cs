@@ -43,9 +43,41 @@ namespace TimeSheetPro.Client.Services
         private void CheckForegroundWindow()
         {
             IsWorking = true;
-            // ... (rest of logic) ...
             
-            OnActivityChanged?.Invoke(_lastActivity);
+            try
+            {
+                IntPtr handle = GetForegroundWindow();
+                if (handle != IntPtr.Zero)
+                {
+                    const int nChars = 256;
+                    StringBuilder buff = new StringBuilder(nChars);
+                    if (GetWindowText(handle, buff, nChars) > 0)
+                    {
+                        string windowTitle = buff.ToString();
+                        GetWindowThreadProcessId(handle, out uint processId);
+                        Process proc = Process.GetProcessById((int)processId);
+                        
+                        string processName = proc.ProcessName;
+                        
+                        // Check if window changed or it's been more than 5 minutes since last sync
+                        if (_lastActivity == null || _lastActivity.ProcessName != processName || _lastActivity.WindowTitle != windowTitle || (DateTime.Now - _lastActivity.Timestamp).TotalMinutes >= 5)
+                        {
+                            _lastActivity = new WindowActivity
+                            {
+                                ProcessName = processName,
+                                WindowTitle = windowTitle,
+                                Timestamp = DateTime.Now
+                            };
+                            OnActivityChanged?.Invoke(_lastActivity);
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // Ignore process access denied errors
+            }
+
             IsWorking = false;
         }
     }
