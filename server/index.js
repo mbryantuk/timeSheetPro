@@ -298,11 +298,41 @@ app.get('/api/client-status', async (req, res) => {
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
+cron.schedule('0 0 * * 0', async () => {
+    try {
+        await db.raw('VACUUM');
+        await logCron('🧹 Weekly Database Vacuum completed.');
+    } catch (e) { await logCron(`❌ Vacuum failed: ${e.message}`); }
+});
+
+// Daily Backup (keep last 7 days)
+cron.schedule('0 1 * * *', async () => {
+    const backupPath = path.join(__dirname, 'data', `backup_${new Date().getDay()}.sqlite`);
+    try {
+        fs.copyFileSync(path.join(__dirname, 'data', 'timesheet.sqlite'), backupPath);
+        await logCron('💾 Daily Database Backup created.');
+    } catch (e) { await logCron(`❌ Backup failed: ${e.message}`); }
+});
+
 app.get('/api/ollama-ps', async (req, res) => {
     try {
         const response = await axios.get(`${OLLAMA_URL}/api/ps`);
-        res.json(response.data);
-    } catch (error) { res.json({ models: [] }); }
+        const data = response.data;
+        // Fix NaN issues by ensuring numbers are valid
+        if (data.models) {
+            data.models = data.models.map(m => ({
+                ...m,
+                size: m.size || 0,
+                vram_used: m.vram_used || 0
+            }));
+        }
+        res.json({
+            ...data,
+            vram_used: data.vram_used || 0,
+            vram_total: data.vram_total || 1, // Avoid division by zero
+            uptime_seconds: data.uptime_seconds || 0
+        });
+    } catch (error) { res.json({ models: [], vram_used: 0, vram_total: 1 }); }
 });
 
 app.post('/api/force-cron', async (req, res) => {
