@@ -32,6 +32,6 @@
         </Grid>
 
         <!-- Logs Pane -->
-        <TextBox x:Name="TxtLogs" Grid.Row="2" Background="#FF222222" Foreground="#FFAAAAAA" FontFamily="Consolas" IsReadOnly="True" TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" BorderBrush="#FF444444"/>
+        <TextBox x:Name="TxtLogs" Grid.Row="2" Background="#FF222222" Foreground="#FFAAAAAA" FontFamily="Consolas" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" BorderBrush="#FF444444"/>
     </Grid>
 </Window>

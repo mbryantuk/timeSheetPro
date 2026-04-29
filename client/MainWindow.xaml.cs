@@ -33,9 +33,12 @@ namespace TimeSheetPro.Client
                     using (var fs = new FileStream("activity_log.txt", FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                     using (var sr = new StreamReader(fs))
                     {
-                        TxtLogs.Text = sr.ReadToEnd();
+                        var allText = sr.ReadToEnd();
+                        var lines = allText.Split(new[] { "\r\n", "\r", "\n" }, System.StringSplitOptions.RemoveEmptyEntries);
+                        System.Array.Reverse(lines);
+                        TxtLogs.Text = string.Join("\n\n", lines);
                     }
-                    TxtLogs.ScrollToEnd();
+                    TxtLogs.ScrollToHome();
                 }
                 else
                 {
