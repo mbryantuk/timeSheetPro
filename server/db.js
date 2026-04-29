@@ -67,7 +67,27 @@ async function initDb() {
     });
   }
 
+  // Task Categorization Rules
+  if (!(await db.schema.hasTable('categorization_rules'))) {
+    await db.schema.createTable('categorization_rules', (table) => {
+      table.increments('id').primary();
+      table.string('pattern').notNullable(); // Regex pattern
+      table.string('field').defaultTo('all'); // window_title, process_name, or all
+      table.string('task_id').references('id').inTable('tasks');
+      table.integer('priority').defaultTo(0);
+      table.timestamp('created_at').defaultTo(db.fn.now());
+    });
+  }
 
+  // Global Exclude Rules (Noise Reduction)
+  if (!(await db.schema.hasTable('exclude_rules'))) {
+    await db.schema.createTable('exclude_rules', (table) => {
+      table.increments('id').primary();
+      table.string('pattern').notNullable();
+      table.string('field').defaultTo('all'); // window_title, process_name, or all
+      table.timestamp('created_at').defaultTo(db.fn.now());
+    });
+  }
 
   // Finalized Entries for Klient
   if (!(await db.schema.hasTable('timesheet_entries'))) {
@@ -77,16 +97,21 @@ async function initDb() {
       table.string('project_id').references('id').inTable('projects');
       table.string('task_id').references('id').inTable('tasks');
       table.date('date').notNullable();
+      table.timestamp('start_time'); // Start of the tracking period
+      table.timestamp('end_time');   // End of the tracking period
       table.float('hours').notNullable();
       table.text('notes');
       table.string('status').defaultTo('draft'); // draft, synced, error
       table.timestamp('created_at').defaultTo(db.fn.now());
       table.text('raw_data');
     });
-  } else if (!(await db.schema.hasColumn('timesheet_entries', 'raw_data'))) {
-    await db.schema.alterTable('timesheet_entries', (table) => {
-      table.text('raw_data');
-    });
+  } else {
+    if (!(await db.schema.hasColumn('timesheet_entries', 'start_time'))) {
+      await db.schema.alterTable('timesheet_entries', (table) => {
+        table.timestamp('start_time');
+        table.timestamp('end_time');
+      });
+    }
   }
 }
 

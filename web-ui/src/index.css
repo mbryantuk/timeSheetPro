@@ -1,3 +1,4 @@
+@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
@@ -140,3 +141,88 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 .status-indicator { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 .status-indicator.online { background: #10b981; box-shadow: 0 0 10px #10b981; animation: pulse 2s infinite; }
 @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+/* Skeleton Loader Animation */
+@keyframes skeleton-loading {
+  0% { background-color: rgba(255, 255, 255, 0.05); }
+  50% { background-color: rgba(255, 255, 255, 0.1); }
+  100% { background-color: rgba(255, 255, 255, 0.05); }
+}
+
+.skeleton {
+  animation: skeleton-loading 1.5s infinite ease-in-out;
+  border-radius: 0.375rem;
+}
+
+/* Toast System */
+.toast-container {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.toast {
+  background: #111827;
+  border: 1px solid #374151;
+  color: white;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  animation: slide-in 0.3s ease-out;
+}
+
+@keyframes slide-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.toast.success { border-left: 4px solid #10b981; }
+.toast.error { border-left: 4px solid #ef4444; }
+
+/* Timeline Visuals */
+.timeline-bucket {
+  flex: 1;
+  height: 100%;
+  border-right: 1px solid rgba(255,255,255,0.05);
+  transition: all 0.2s;
+}
+
+.timeline-bucket:last-child { border-right: none; }
+
+.timeline-bucket.active {
+  background: #3b82f6;
+  opacity: 0.4;
+}
+
+.timeline-bucket.active:hover {
+  opacity: 1;
+  box-shadow: 0 0 10px #3b82f6;
+}
+
+.timeline-container {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid #1f2937;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  height: 2.5rem;
+  display: flex;
+  position: relative;
+}
+
+/* Base Utility */
+.animate-bounce-subtle {
+  animation: bounce-subtle 2s infinite;
+}
+
+@keyframes bounce-subtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}

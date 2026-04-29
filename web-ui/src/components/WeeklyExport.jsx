@@ -5,7 +5,7 @@ const WeeklyExport = () => {
   const [loading, setLoading] = useState(true);
   const [matrixData, setMatrixData] = useState([]);
   const [weekDates, setWeekDates] = useState([]);
-  const [currentWeekOffset, setCurrentWeekOffset] = useState(0); // 0 = current week, -1 = last week, etc.
+  const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
 
   const fetchExports = async () => {
     setLoading(true);
@@ -30,10 +30,8 @@ const WeeklyExport = () => {
   }, [currentWeekOffset, entries]);
 
   const processMatrix = (data, weekOffset) => {
-    // Determine the date range for the selected week
     const today = new Date();
-    // Get Monday of current week
-    const currentDay = today.getDay() === 0 ? 7 : today.getDay(); // 1=Mon, 7=Sun
+    const currentDay = today.getDay() === 0 ? 7 : today.getDay();
     const monday = new Date(today);
     monday.setDate(today.getDate() - currentDay + 1 + (weekOffset * 7));
     monday.setHours(0,0,0,0);
@@ -52,29 +50,28 @@ const WeeklyExport = () => {
       const entryDate = new Date(entry.date);
       entryDate.setHours(0,0,0,0);
       
-      // Only include if it falls in the current week
       if (entryDate >= dates[0] && entryDate <= dates[6]) {
-        const key = `${entry.account_name || 'N/A'}|${entry.project_name || 'Unassigned'}|${entry.task_name || 'No Task'}`;
+        const key = `${entry.account_name}|${entry.project_name}|${entry.task_name}`;
         if (!matrixMap[key]) {
           matrixMap[key] = {
             id: key,
             account: entry.account_name || 'N/A',
             project: entry.project_name || 'Unassigned',
             task: entry.task_name || 'No Task',
-            billable: true,
-            days: [0, 0, 0, 0, 0, 0, 0], // Mon-Sun
+            days: [0, 0, 0, 0, 0, 0, 0],
             notes: ['', '', '', '', '', '', ''],
             total: 0
           };
         }
 
-        const dayIndex = (entryDate.getDay() === 0 ? 7 : entryDate.getDay()) - 1; // 0=Mon, 6=Sun
+        const dayIndex = (entryDate.getDay() === 0 ? 7 : entryDate.getDay()) - 1;
         matrixMap[key].days[dayIndex] += entry.total_hours || 0;
         matrixMap[key].total += entry.total_hours || 0;
         
         if (entry.combined_notes) {
-          const existingNotes = matrixMap[key].notes[dayIndex];
-          matrixMap[key].notes[dayIndex] = existingNotes ? `${existingNotes}\n${entry.combined_notes}` : entry.combined_notes;
+          const cleanedNotes = entry.combined_notes.split('\n').map(n => n.trim().replace(/^- /, '')).filter(Boolean).join('; ');
+          const existing = matrixMap[key].notes[dayIndex];
+          matrixMap[key].notes[dayIndex] = existing ? `${existing}; ${cleanedNotes}` : cleanedNotes;
         }
       }
     });
@@ -82,15 +79,33 @@ const WeeklyExport = () => {
     setMatrixData(Object.values(matrixMap));
   };
 
-  const copyToClipboard = () => {
-    let tsv = 'Account\tProject\tTask\tMon\tTue\tWed\tThu\tFri\tSat\tSun\tTotal\n';
+  const copyKlientMatrix = () => {
+    // Format: Project | Task | Mon | Tue | Wed | Thu | Fri | Sat | Sun
+    // Klient "Add Multiple Rows" usually takes this tab-separated format
+    let tsv = '';
     matrixData.forEach(row => {
-      tsv += `${row.account}\t${row.project}\t${row.task}\t`;
-      tsv += row.days.map(d => d.toFixed(2)).join('\t');
-      tsv += `\t${row.total.toFixed(2)}\n`;
+      const hours = row.days.map(d => d > 0 ? d.toFixed(2) : '').join('\t');
+      tsv += `${row.project}\t${row.task}\t${hours}\n`;
     });
+    
     navigator.clipboard.writeText(tsv);
-    alert('Matrix copied to clipboard (paste directly into Excel/Sheets)!');
+    alert('Matrix copied! In Klient, click "Add Multiple Rows" and paste.');
+  };
+
+  const copyDailyNotes = () => {
+    // Format for pasting into a specific day's comment box
+    let notes = '';
+    matrixData.forEach(row => {
+      notes += `### ${row.project} - ${row.task} ###\n`;
+      row.days.forEach((hours, i) => {
+        if (hours > 0) {
+          notes += `${weekDates[i].toLocaleDateString()}: ${row.notes[i]}\n`;
+        }
+      });
+      notes += '\n';
+    });
+    navigator.clipboard.writeText(notes);
+    alert('Detailed notes copied to clipboard!');
   };
 
   const changeWeek = (offsetDelta) => {
@@ -103,102 +118,111 @@ const WeeklyExport = () => {
 
   const grandTotal = matrixData.reduce((sum, row) => sum + row.total, 0);
 
-  const formatDateHeader = (date) => {
-    const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-    return `${days[date.getDay()]} ${date.getDate()}.${date.getMonth() + 1}.`;
-  };
-
-  if (loading) {
-    return <div className="spinner"></div>;
-  }
-
   return (
-    <div className="fade-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h2>Timesheet Matrix (Klient Format)</h2>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <button onClick={() => changeWeek(-1)} className="btn-secondary">← Prev Week</button>
-          <span style={{ fontWeight: 'bold' }}>
+    <div className="fade-in space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold text-white">Timesheet Matrix</h2>
+          <p className="text-gray-500 text-sm mt-1">Review approved entries and export to Salesforce Klient</p>
+        </div>
+        <div className="flex gap-2 items-center bg-gray-900 p-1 rounded-lg border border-gray-800">
+          <button onClick={() => changeWeek(-1)} className="p-2 hover:bg-gray-800 rounded transition-colors text-gray-400 hover:text-white">←</button>
+          <span className="text-sm font-bold px-4 text-blue-400">
             {weekDates.length > 0 && `${weekDates[0].toLocaleDateString()} - ${weekDates[6].toLocaleDateString()}`}
           </span>
-          <button onClick={() => changeWeek(1)} className="btn-secondary" disabled={currentWeekOffset >= 0}>Next Week →</button>
-          <button onClick={copyToClipboard} className="btn-primary" style={{ marginLeft: '1rem' }}>
-            📋 Copy to Excel
-          </button>
+          <button onClick={() => changeWeek(1)} className="p-2 hover:bg-gray-800 rounded transition-colors text-gray-400 hover:text-white" disabled={currentWeekOffset >= 0}>→</button>
         </div>
       </div>
 
-      <div className="card table-container" style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', minWidth: '1000px', textAlign: 'center', borderCollapse: 'collapse' }}>
+      <div className="flex gap-3">
+        <button onClick={copyKlientMatrix} className="btn-primary flex-1 flex items-center justify-center gap-2 py-3 shadow-lg shadow-blue-900/20">
+          📋 Copy Klient Grid
+        </button>
+        <button onClick={copyDailyNotes} className="btn-secondary flex-1 flex items-center justify-center gap-2 py-3 border-gray-700">
+          📝 Copy All Notes
+        </button>
+      </div>
+
+      <div className="card overflow-x-auto p-0 border-gray-800 shadow-2xl">
+        <table className="w-full text-sm text-center border-collapse">
           <thead>
-            <tr>
-              <th style={{ textAlign: 'left', width: '15%' }}>ACCOUNT</th>
-              <th style={{ textAlign: 'left', width: '20%' }}>PROJECT</th>
-              <th style={{ textAlign: 'left', width: '20%' }}>TASK</th>
-              <th style={{ width: '5%' }}>BILLABLE</th>
-              {weekDates.map((date, i) => (
-                <th key={i} style={{ width: '5%', fontSize: '0.8rem' }}>{formatDateHeader(date)}</th>
+            <tr className="bg-gray-900/50 border-b border-gray-800">
+              <th className="text-left py-4 px-6 text-gray-400 font-bold uppercase tracking-wider text-[10px] w-48">Project / Task</th>
+              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => (
+                <th key={day} className="py-4 px-2 text-gray-400 font-bold uppercase tracking-wider text-[10px] w-20">
+                  {day}
+                  <div className="text-[9px] font-normal text-gray-600 mt-0.5">{weekDates[i]?.getDate()}.{weekDates[i]?.getMonth() + 1}</div>
+                </th>
               ))}
-              <th style={{ width: '5%' }}>TOTAL</th>
+              <th className="py-4 px-6 text-blue-400 font-bold uppercase tracking-wider text-[10px] w-24">Total</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-gray-800/50">
             {matrixData.length === 0 ? (
               <tr>
-                <td colSpan="13" style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>
-                  No approved timesheet entries for this week.
-                </td>
+                <td colSpan="9" className="py-20 text-gray-600 italic">No approved entries found for this week.</td>
               </tr>
             ) : (
               matrixData.map(row => (
-                <tr key={row.id}>
-                  <td style={{ textAlign: 'left' }}>{row.account}</td>
-                  <td style={{ textAlign: 'left' }}>{row.project}</td>
-                  <td style={{ textAlign: 'left' }}>{row.task}</td>
-                  <td>
-                    <input type="checkbox" checked={row.billable} readOnly style={{ accentColor: 'var(--primary)' }} />
+                <tr key={row.id} className="hover:bg-blue-900/5 transition-colors group">
+                  <td className="text-left py-4 px-6">
+                    <div className="font-bold text-gray-200 truncate" title={row.project}>{row.project}</div>
+                    <div className="text-xs text-gray-500 truncate" title={row.task}>{row.task}</div>
                   </td>
                   {row.days.map((hours, i) => (
-                    <td key={i} style={{ position: 'relative' }}>
+                    <td key={i} className={`py-4 px-2 border-x border-gray-800/20 ${hours > 0 ? 'bg-blue-900/10' : ''}`}>
                       {hours > 0 ? (
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                          <span style={{ fontWeight: 'bold', color: 'var(--text)' }}>{hours.toFixed(2)}</span>
+                        <div className="relative group/note">
+                          <span className="font-mono font-bold text-white text-base">{hours.toFixed(2)}</span>
                           {row.notes[i] && (
-                            <span title={row.notes[i]} style={{ cursor: 'help', fontSize: '1.2rem', color: 'var(--primary)' }}>
-                              💬
-                            </span>
+                            <div className="absolute bottom-0 right-0 w-1.5 h-1.5 bg-blue-500 rounded-full" title={row.notes[i]}></div>
+                          )}
+                          {/* Note Tooltip */}
+                          {row.notes[i] && (
+                            <div className="absolute z-10 hidden group-hover/note:block bg-gray-900 border border-gray-700 p-2 rounded shadow-2xl text-[10px] text-left w-48 -left-20 bottom-8">
+                              <p className="text-blue-400 mb-1 font-bold">Notes:</p>
+                              <p className="text-gray-300 leading-tight italic">{row.notes[i]}</p>
+                            </div>
                           )}
                         </div>
                       ) : (
-                        <span style={{ color: '#555' }}>0.00</span>
+                        <span className="text-gray-800 font-mono">-</span>
                       )}
                     </td>
                   ))}
-                  <td style={{ fontWeight: 'bold' }}>{row.total.toFixed(2)}</td>
+                  <td className="py-4 px-6 font-mono font-bold text-blue-400 text-base bg-blue-900/5">
+                    {row.total.toFixed(2)}
+                  </td>
                 </tr>
               ))
             )}
-            
-            {/* Totals Row */}
-            {matrixData.length > 0 && (
-              <tr style={{ borderTop: '2px solid var(--border)', backgroundColor: 'rgba(255,255,255,0.05)' }}>
-                <td colSpan="4" style={{ textAlign: 'right', fontWeight: 'bold', paddingRight: '1rem' }}>TOTAL HOURS:</td>
-                {[0, 1, 2, 3, 4, 5, 6].map(i => (
-                  <td key={i} style={{ fontWeight: 'bold' }}>
-                    {calculateColumnTotal(i).toFixed(2)}
-                  </td>
-                ))}
-                <td style={{ fontWeight: 'bold', color: 'var(--primary)', fontSize: '1.1rem' }}>
-                  {grandTotal.toFixed(2)}
-                </td>
-              </tr>
-            )}
           </tbody>
+          <tfoot className="bg-gray-900/50 font-bold border-t border-gray-700">
+            <tr>
+              <td className="py-4 px-6 text-left text-gray-400 uppercase text-[10px]">Daily Totals</td>
+              {[0, 1, 2, 3, 4, 5, 6].map(i => {
+                const dayTotal = calculateColumnTotal(i);
+                return (
+                  <td key={i} className={`py-4 px-2 font-mono text-sm ${dayTotal < 7.5 && dayTotal > 0 ? 'text-orange-500' : 'text-gray-300'}`}>
+                    {dayTotal > 0 ? dayTotal.toFixed(2) : '-'}
+                  </td>
+                );
+              })}
+              <td className="py-4 px-6 font-mono text-xl text-green-400">
+                {grandTotal.toFixed(2)}
+              </td>
+            </tr>
+          </tfoot>
         </table>
       </div>
       
-      <div style={{ marginTop: '1.5rem', color: '#aaa', fontSize: '0.9rem' }}>
-        <p>💡 Tip: You can hover over the 💬 icon to view the generated summary notes for that specific day. Click "Copy to Excel" to quickly paste this matrix directly into your Klient/Krow timesheet system.</p>
+      <div className="bg-blue-900/10 border border-blue-900/30 p-4 rounded-lg flex gap-4 items-start shadow-inner">
+        <span className="text-xl">💡</span>
+        <div className="text-xs text-blue-300 leading-relaxed">
+          <p className="font-bold mb-1 uppercase tracking-wider">Klient Pro Tip</p>
+          <p>Click <strong>"Copy Klient Grid"</strong> to copy the grid exactly as Klient's "Add Multiple Rows" expects. 
+          Use <strong>"Copy All Notes"</strong> to get a breakdown of your comments for manual pasting into the Salesforce Klient Daily Notes field.</p>
+        </div>
       </div>
     </div>
   );

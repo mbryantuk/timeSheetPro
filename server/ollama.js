@@ -28,12 +28,7 @@ async function summarizeActivities(activities, calendarContext = '') {
   }
 
   const lastActivity = activities[activities.length - 1];
-  let images = [];
-  if (lastActivity.ocr_text && lastActivity.ocr_text.length < 50 && lastActivity.image_data) {
-      console.log('🧐 OCR text sparse, triggering vision analysis...');
-      currentTask = "Vision Analysis (Llava)...";
-      images = [lastActivity.image_data];
-  }
+  // Removed experimental vision fallback due to hallucination
 
   const activitySummary = activities.map(a => 
     `- [${a.process_name}] ${a.window_title} (${Math.round(a.duration_ms / 1000 / 60)} mins)`
@@ -44,14 +39,26 @@ async function summarizeActivities(activities, calendarContext = '') {
   abortController = new AbortController();
   try {
     const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
-      model: images.length > 0 ? 'llava' : OLLAMA_MODEL,
+      model: OLLAMA_MODEL,
       system: systemPrompt,
       prompt: userPrompt,
-      images: images,
       stream: false
     }, { signal: abortController.signal });
 
-    let cleaned = response.data.response.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+    let cleaned = response.data.response
+      .replace(/<think>[\s\S]*?<\/think>/g, '') // Remove DeepSeek thinking blocks
+      .replace(/<[^>]*>/g, '')                  // Remove all HTML-style tags (<s>, </s>, <br>, etc.)
+      .replace(/\s+/g, ' ')                      // Normalize whitespace
+      .trim();
+
+    // Fallback if the model still generated garbage or nonsensical symbols
+    const isJunk = cleaned.length < 3 || 
+                   (cleaned.includes('##') && cleaned.length < 20) ||
+                   (cleaned.match(/[#$@%^&*()_+={}\[\]|\\<>]/g) || []).length > (cleaned.length / 2);
+
+    if (isJunk) {
+       cleaned = "[Auto-Summarized] General Project Work";
+    }
     return cleaned;
   } catch (error) {
     if (axios.isCancel(error)) {

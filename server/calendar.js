@@ -17,7 +17,7 @@ async function getMeetingsForTimeframe(start, end) {
           
           // If event overlaps with the timeframe
           if (eventStart < end && eventEnd > start) {
-            meetings.push(`- \${event.summary} (\${eventStart.toLocaleTimeString()} - \${eventEnd.toLocaleTimeString()})`);
+            meetings.push(`- ${event.summary} (${eventStart.toLocaleTimeString()} - ${eventEnd.toLocaleTimeString()})`);
           }
         }
       }

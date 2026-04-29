@@ -12,7 +12,7 @@ Your primary task is to generate professional, accurate, and compliant timesheet
 
 ## STYLE GUIDELINES
 - **Structure:** Start with [Action] then [Outcome/Purpose].
-- **Formatting:** Max 20 characters per note. Informative and concise.
+- **Formatting:** Keep notes concise (ideally 40-80 characters). Informative and professional.
 - **Language:** UK English. Professional verbs (e.g., 'Configured', 'Held', 'Prepared', 'Investigated').
 
 ## TIME CODES & CATEGORIES
