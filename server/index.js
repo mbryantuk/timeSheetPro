@@ -289,7 +289,9 @@ async function generateDraftForPeriod(start, end) {
     if (isCronSummarizing) { return; }
     isCronSummarizing = true;
     try {
-        const activities = await db('activities').where('timestamp', '>=', start.toISOString()).andWhere('timestamp', '<=', end.toISOString());
+        const startStr = start.toISOString().replace('T', ' ').substring(0, 19);
+        const endStr = end.toISOString().replace('T', ' ').substring(0, 19);
+        const activities = await db('activities').where('timestamp', '>=', startStr).andWhere('timestamp', '<=', endStr);
         if (activities.length === 0) { await logCron('No activities found.'); isCronSummarizing = false; return; }
         const meetings = await getMeetingsForTimeframe(start, end);
         const summary = await summarizeActivities(activities, meetings.join('\n'));
