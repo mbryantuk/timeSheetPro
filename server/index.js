@@ -144,11 +144,11 @@ app.get('/api/export/weekly', async (req, res) => {
     const exports = await db('timesheet_entries')
       .join('tasks', 'timesheet_entries.task_id', 'tasks.id')
       .join('projects', 'timesheet_entries.project_id', 'projects.id')
-      .where('status', 'approved')
-      .select('projects.name as project_name', 'tasks.name as task_name', 'timesheet_entries.date')
+      .where('timesheet_entries.status', 'approved')
+      .select('tasks.account_name', 'projects.name as project_name', 'tasks.name as task_name', 'timesheet_entries.date')
       .sum('timesheet_entries.hours as total_hours')
       .select(db.raw('GROUP_CONCAT(timesheet_entries.notes, "\\n- ") as combined_notes'))
-      .groupBy('tasks.id', 'timesheet_entries.date').orderBy('timesheet_entries.date', 'desc');
+      .groupBy('tasks.account_name', 'projects.name', 'tasks.name', 'timesheet_entries.date').orderBy('timesheet_entries.date', 'desc');
     res.json(exports);
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
