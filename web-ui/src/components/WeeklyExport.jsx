@@ -49,6 +49,28 @@ const WeeklyExport = () => {
     // Using a more subtle feedback than alert would be better, but keeping it simple for now
   };
 
+  // Grouping logic
+  const groupedEntries = entries.reduce((acc, entry) => {
+    const key = `${entry.account_name} - ${entry.project_name}`;
+    if (!acc[key]) {
+      acc[key] = {
+        account: entry.account_name,
+        project: entry.project_name,
+        totalHours: 0,
+        items: []
+      };
+    }
+    acc[key].totalHours += entry.total_hours;
+    acc[key].items.push(entry);
+    return acc;
+  }, {});
+
+  const [expandedGroups, setExpandedGroups] = useState({});
+
+  const toggleGroup = (key) => {
+    setExpandedGroups(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
   if (loading) {
     return (
       <div className="p-8 space-y-4">
@@ -76,72 +98,76 @@ const WeeklyExport = () => {
         </button>
       </div>
 
-      {/* Main Content Table */}
-      <div className="overflow-hidden rounded-[2rem] border border-white/5 shadow-2xl bg-black/20 backdrop-blur-3xl">
-        <table className="w-full text-left border-collapse" role="grid">
-          <thead>
-            <tr className="bg-gradient-to-r from-blue-950/20 via-purple-950/20 to-transparent border-b border-white/5">
-              <th className="px-8 py-6 text-[10px] font-black text-blue-400 uppercase tracking-widest">Project Details</th>
-              <th className="px-8 py-6 text-[10px] font-black text-purple-400 uppercase tracking-widest text-center">Schedule</th>
-              <th className="px-8 py-6 text-[10px] font-black text-green-400 uppercase tracking-widest text-center">Duration</th>
-              <th className="px-8 py-6 text-[10px] font-black text-gray-500 uppercase tracking-widest text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/[0.02]">
-            {entries.length === 0 ? (
-              <tr>
-                <td colSpan="4" className="px-8 py-32 text-center">
-                  <div className="text-4xl mb-4 grayscale opacity-10">📅</div>
-                  <p className="text-gray-600 font-black italic uppercase tracking-widest text-xs">No approved entries found for this week.</p>
-                </td>
-              </tr>
-            ) : (
-              entries.map((entry, idx) => (
-                <tr key={idx} className="hover:bg-white/[0.02] transition-all group">
-                  <td className="px-8 py-6 max-w-md">
-                    <div className="font-black text-gray-100 text-lg tracking-tighter leading-tight">{entry.account_name}</div>
-                    <div className="text-[10px] font-bold text-gray-500 mt-1 uppercase tracking-tighter flex items-center gap-2">
-                      <span className="text-blue-500/50">{entry.project_name}</span>
-                      <span className="text-gray-800">|</span>
-                      <span className="text-purple-500/50">{entry.task_name}</span>
-                    </div>
-                    {/* Note Snippet Improvement */}
-                    <div className="mt-3 text-[11px] text-gray-400 line-clamp-1 italic group-hover:text-gray-300 transition-colors">
-                      "{entry.combined_notes}"
-                    </div>
-                  </td>
-                  <td className="px-8 py-6 text-center">
-                    <div className="inline-flex flex-col items-center">
-                       <span className="text-xs font-black text-gray-400 tracking-widest">
-                         {new Date(entry.date).toLocaleDateString('en-GB', { weekday: 'short' })}
-                       </span>
-                       <span className="bg-white/5 text-gray-500 text-[9px] font-black px-2 py-0.5 rounded-full border border-white/5 mt-1">
-                         {new Date(entry.date).toLocaleDateString()}
-                       </span>
-                    </div>
-                  </td>
-                  <td className="px-8 py-6 text-center">
-                    <div className="flex flex-col items-center">
-                        <span className="text-3xl font-black text-white tracking-tighter group-hover:text-green-400 transition-colors">
-                        {entry.total_hours.toFixed(2)}
-                        </span>
-                        <span className="text-[8px] font-black text-green-900 tracking-[0.2em] -mt-1">HOURS</span>
-                    </div>
-                  </td>
-                  <td className="px-8 py-6 text-right">
-                    <button 
-                      onClick={() => openDrawer(entry)}
-                      className="bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white text-[9px] font-black px-5 py-3 rounded-xl border border-blue-500/20 transition-all active:scale-95 uppercase tracking-widest shadow-lg shadow-blue-900/0 hover:shadow-blue-600/20"
-                      aria-label={`View and edit notes for ${entry.account_name}`}
-                    >
-                      View Notes
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+      {/* Grouped Table View */}
+      <div className="space-y-4">
+        {Object.keys(groupedEntries).length === 0 ? (
+          <div className="rounded-[2rem] border border-white/5 shadow-2xl bg-black/20 backdrop-blur-3xl p-32 text-center">
+             <div className="text-4xl mb-4 grayscale opacity-10">📅</div>
+             <p className="text-gray-600 font-black italic uppercase tracking-widest text-xs">No approved entries found for this week.</p>
+          </div>
+        ) : (
+          Object.entries(groupedEntries).map(([key, group]) => (
+            <div key={key} className="overflow-hidden rounded-3xl border border-white/5 shadow-xl bg-black/20 backdrop-blur-xl transition-all">
+              {/* Group Header */}
+              <div 
+                onClick={() => toggleGroup(key)}
+                className="px-8 py-5 flex justify-between items-center cursor-pointer hover:bg-white/[0.02] transition-colors border-b border-white/[0.02]"
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`p-2 rounded-lg bg-blue-500/10 text-blue-400 transition-transform ${expandedGroups[key] ? 'rotate-180' : ''}`}>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7"></path></svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-white tracking-tighter">{group.account}</h3>
+                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{group.project}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-2xl font-black text-green-500 tracking-tighter">{group.totalHours.toFixed(2)}</span>
+                  <span className="text-[8px] font-black text-green-900 ml-1 tracking-widest">TOTAL HRS</span>
+                </div>
+              </div>
+
+              {/* Group Items */}
+              {expandedGroups[key] && (
+                <div className="animate-slide-down">
+                   <table className="w-full text-left border-collapse">
+                      <tbody className="divide-y divide-white/[0.02]">
+                        {group.items.map((entry, idx) => (
+                          <tr key={idx} className="hover:bg-white/[0.01] transition-all group">
+                            <td className="px-8 py-4">
+                               <div className="text-xs font-black text-gray-400">{entry.task_name}</div>
+                               <div className="mt-1 text-[11px] text-gray-500 line-clamp-1 italic group-hover:text-gray-400 transition-colors">
+                                 "{entry.combined_notes}"
+                               </div>
+                            </td>
+                            <td className="px-8 py-4 text-center w-32">
+                               <span className="text-[10px] font-black text-gray-500 bg-white/5 px-2 py-0.5 rounded border border-white/5">
+                                 {new Date(entry.date).toLocaleDateString()}
+                               </span>
+                            </td>
+                            <td className="px-8 py-4 text-center w-24">
+                               <span className="text-lg font-black text-white tracking-tighter">
+                                 {entry.total_hours.toFixed(2)}
+                               </span>
+                            </td>
+                            <td className="px-8 py-4 text-right w-32">
+                               <button 
+                                 onClick={(e) => { e.stopPropagation(); openDrawer(entry); }}
+                                 className="bg-white/5 hover:bg-blue-600/20 text-blue-400 text-[9px] font-black px-4 py-2 rounded-lg border border-white/10 transition-all uppercase tracking-widest"
+                               >
+                                 Details
+                               </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                   </table>
+                </div>
+              )}
+            </div>
+          ))
+        )}
       </div>
 
       {/* Premium Side Drawer for Notes */}
