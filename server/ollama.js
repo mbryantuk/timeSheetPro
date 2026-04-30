@@ -30,9 +30,26 @@ async function summarizeActivities(activities, calendarContext = '') {
   const lastActivity = activities[activities.length - 1];
   // Removed experimental vision fallback due to hallucination
 
-  const activitySummary = activities.map(a => 
-    `- [${a.process_name}] ${a.window_title} (${Math.round(a.duration_ms / 1000 / 60)} mins)`
-  ).join('\n');
+  const grouped = activities.reduce((acc, a) => {
+    const key = `${a.process_name}|||${a.window_title}`;
+    if (!acc[key]) {
+      acc[key] = { 
+        process_name: a.process_name, 
+        window_title: a.window_title, 
+        duration_ms: 0,
+        is_background: a.is_background,
+        is_call: a.is_call
+      };
+    }
+    acc[key].duration_ms += a.duration_ms;
+    return acc;
+  }, {});
+
+  const activitySummary = Object.values(grouped)
+    .sort((a, b) => b.duration_ms - a.duration_ms)
+    .map(a => 
+      `- [${a.process_name}] ${a.window_title} (${Math.round(a.duration_ms / 1000 / 60)} mins)${a.is_background ? ' [BACKGROUND NOISE]' : ''}${a.is_call ? ' [ACTIVE CALL]' : ''}`
+    ).join('\n');
 
   const userPrompt = `Summarize these activities:\n${activitySummary}${calendarContext ? `\n\n### IMPORTANT CALENDAR CONTEXT\n${calendarContext}` : ''}`;
 
@@ -51,15 +68,29 @@ async function summarizeActivities(activities, calendarContext = '') {
       .replace(/\s+/g, ' ')                      // Normalize whitespace
       .trim();
 
-    // Fallback if the model still generated garbage or nonsensical symbols
-    const isJunk = cleaned.length < 3 || 
-                   (cleaned.includes('##') && cleaned.length < 20) ||
-                   (cleaned.match(/[#$@%^&*()_+={}\[\]|\\<>]/g) || []).length > (cleaned.length / 2);
-
-    if (isJunk) {
-       cleaned = "[Auto-Summarized] General Project Work";
+    // Look for all occurrences of "[Percentage]% | [Note]" or similar
+    const regex = /(\d+)\s*%?\s*[|:-]\s*([^%\n]+?)(?=\s*\d+\s*%?\s*[|:-]|$)/g;
+    let match;
+    const tasks = [];
+    while ((match = regex.exec(cleaned)) !== null) {
+      tasks.push({ percentage: parseInt(match[1]), note: match[2].trim() });
     }
-    return cleaned;
+
+    if (tasks.length === 0) {
+       // Fallback for list style without pipes
+       const lines = cleaned.split('\n');
+       for (const line of lines) {
+         const m = line.match(/^\s*(\d+)\s*%?\s*[|:-]\s*(.*)/);
+         if (m) {
+           tasks.push({ percentage: parseInt(m[1]), note: m[2].trim() });
+         }
+       }
+    }
+
+    if (tasks.length === 0) {
+       return [{ percentage: 100, note: cleaned.substring(0, 200) || "[Auto-Summarized] General Project Work" }];
+    }
+    return tasks;
   } catch (error) {
     if (axios.isCancel(error)) {
         console.log('🤖 AI Generation aborted by user.');

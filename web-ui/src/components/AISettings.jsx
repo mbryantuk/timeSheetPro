@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
 
 const AISettings = () => {
-  const [prompt, setPrompt] = useState('');
+  const [prompt, setPrompt] = useState(`You are an expert Solution Architect at Puzzel. Generate professional, compliant timesheet notes.
+- Start with a Verb.
+- Include Purpose/Outcome.
+- Strictly UNDER 20 WORDS.
+- Use UK English.
+- Avoid vague terms like 'support' or 'general work'.`);
   const [saved, setSaved] = useState(false);
   const [manualSummary, setManualSummary] = useState({
     hoursAgo: 1,

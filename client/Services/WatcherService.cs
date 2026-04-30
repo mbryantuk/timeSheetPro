@@ -11,6 +11,7 @@ namespace TimeSheetPro.Client.Services
         public string ProcessName { get; set; } = "";
         public string WindowTitle { get; set; } = "";
         public DateTime Timestamp { get; set; }
+        public bool IsCall { get; set; } = false;
     }
 
     public class WatcherService
@@ -55,11 +56,35 @@ namespace TimeSheetPro.Client.Services
                     {
                         string windowTitle = buff.ToString();
                         string processName = "Unknown";
+                        bool isCall = false;
+
                         try
                         {
                             GetWindowThreadProcessId(handle, out uint processId);
                             Process proc = Process.GetProcessById((int)processId);
                             processName = proc.ProcessName;
+                            string procLower = processName.ToLower();
+                            string titleLower = windowTitle.ToLower();
+
+                            // Universal Call Detection
+                            // 1. Teams
+                            if (procLower.Contains("teams") && (windowTitle.Contains("| Microsoft Teams") || windowTitle.Contains("Meeting |")))
+                            {
+                                if (!windowTitle.StartsWith("Calendar") && !windowTitle.StartsWith("Activity"))
+                                    isCall = true;
+                            }
+                            // 2. Zoom
+                            else if (procLower.Contains("zoom"))
+                            {
+                                if (windowTitle.Contains("Zoom Meeting") || windowTitle.Contains("Zoom Webinar"))
+                                    isCall = true;
+                            }
+                            // 3. Google Meet (usually in Chrome or Edge)
+                            else if ((procLower.Contains("chrome") || procLower.Contains("msedge")) && 
+                                     (windowTitle.Contains("Meet - ") || windowTitle.Contains("Google Meet")))
+                            {
+                                isCall = true;
+                            }
                         }
                         catch
                         {
@@ -67,17 +92,15 @@ namespace TimeSheetPro.Client.Services
                         }
                         
                         
-                        // Check if window changed or it's been more than 5 minutes since last sync
-                        if (_lastActivity == null || _lastActivity.ProcessName != processName || _lastActivity.WindowTitle != windowTitle || (DateTime.Now - _lastActivity.Timestamp).TotalMinutes >= 5)
+                        // Always invoke activity update every 5 seconds for accurate duration tracking
+                        _lastActivity = new WindowActivity
                         {
-                            _lastActivity = new WindowActivity
-                            {
-                                ProcessName = processName,
-                                WindowTitle = windowTitle,
-                                Timestamp = DateTime.Now
-                            };
-                            OnActivityChanged?.Invoke(_lastActivity);
-                        }
+                            ProcessName = processName,
+                            WindowTitle = windowTitle,
+                            Timestamp = DateTime.Now,
+                            IsCall = isCall
+                        };
+                        OnActivityChanged?.Invoke(_lastActivity);
                     }
                 }
             }

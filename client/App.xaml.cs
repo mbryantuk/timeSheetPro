@@ -98,18 +98,29 @@ namespace TimeSheetPro.Client
 
             try
             {
-                // Capture and OCR
-                byte[] screenshot = _capture.CaptureActiveWindow();
+                // Capture all screens for full context
+                byte[] screenshot = _capture.CaptureAllScreens();
                 string ocrText = await _ocr.ExtractTextFromImageAsync(screenshot);
                 string base64Image = screenshot != null ? Convert.ToBase64String(screenshot) : "";
 
+                // Background noise filtering
+                string processName = activity.ProcessName ?? "Unknown";
+                string windowTitle = activity.WindowTitle ?? "Unknown";
+                
+                // If it's a known background app that isn't usually "work", we can flag it
+                bool isBackgroundNoise = processName.ToLower().Contains("spotify") || 
+                                         processName.ToLower().Contains("whatsapp") ||
+                                         windowTitle.ToLower().Contains("spotify");
+
                 var payload = new
                 {
-                    process_name = activity.ProcessName ?? "Unknown",
-                    window_title = activity.WindowTitle ?? "Unknown",
+                    process_name = processName,
+                    window_title = windowTitle,
                     ocr_text = ocrText ?? "",
                     image_data = base64Image,
                     duration_ms = 5000,
+                    is_background = isBackgroundNoise,
+                    is_call = activity.IsCall,
                     task_id = (string?)null
                 };
 

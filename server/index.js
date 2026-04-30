@@ -103,8 +103,18 @@ app.post('/api/tasks/import/csv', async (req, res) => {
 
 app.post('/api/activities', async (req, res) => {
   try {
-    const { process_name, window_title, url, ocr_text, image_data, duration_ms, task_id } = req.body;
-    const [id] = await db('activities').insert({ process_name, window_title, url, ocr_text, image_data, duration_ms, task_id });
+    const { process_name, window_title, url, ocr_text, image_data, duration_ms, task_id, is_background, is_call } = req.body;
+    const [id] = await db('activities').insert({ 
+        process_name, 
+        window_title, 
+        url, 
+        ocr_text, 
+        image_data, 
+        duration_ms, 
+        task_id,
+        is_background: is_background || false,
+        is_call: is_call || false
+    });
     res.status(201).json({ id });
   } catch (error) {
     console.error('API Activities Error:', error);
@@ -246,7 +256,7 @@ app.get('/api/export/weekly', async (req, res) => {
   try {
     const exports = await db('timesheet_entries')
       .join('tasks', 'timesheet_entries.task_id', 'tasks.id')
-      .join('projects', 'timesheet_entries.project_id', 'projects.id')
+      .join('projects', 'tasks.project_id', 'projects.id')
       .where('timesheet_entries.status', 'approved')
       .select('tasks.account_name', 'projects.name as project_name', 'tasks.name as task_name', 'timesheet_entries.date')
       .sum('timesheet_entries.hours as total_hours')
@@ -472,22 +482,73 @@ async function generateDraftForPeriod(start, end) {
         }
 
         const meetings = await getMeetingsForTimeframe(start, end);
-        const summary = await summarizeActivities(activities, meetings.join('\n'));
+        const tasks = await summarizeActivities(activities, meetings.join('\n'));
         const totalMs = activities.reduce((sum, a) => sum + a.duration_ms, 0);
-        const decimalHours = parseFloat((totalMs / (1000 * 60 * 60)).toFixed(2));
-        
-        await db('timesheet_entries').insert({ 
-            task_id: assignedTaskId, 
-            date: start.toISOString().split('T')[0], 
-            start_time: startStr,
-            end_time: endStr,
-            hours: decimalHours, 
-            notes: summary, 
-            raw_data: JSON.stringify(activities.map(a => `[${a.process_name}] ${a.window_title}`)), 
-            status: 'draft' 
+        const totalHours = totalMs / (1000 * 60 * 60);
+
+        if (!Array.isArray(tasks)) {
+            // Handle error string fallback if summarizeActivities failed
+            await db('timesheet_entries').insert({ 
+                task_id: assignedTaskId, 
+                date: start.toISOString().split('T')[0], 
+                start_time: startStr,
+                end_time: endStr,
+                hours: parseFloat((Math.round(totalHours / 0.25) * 0.25).toFixed(2)) || 0.25, 
+                notes: tasks, 
+                raw_data: JSON.stringify(activities.map(a => `[${a.process_name}] ${a.window_title}`)), 
+                status: 'draft' 
+            });
+            return;
+        }
+
+        let targetTotal = Math.round(totalHours / 0.25) * 0.25;
+        if (targetTotal === 0 && totalHours > 0) targetTotal = 0.25;
+
+        // Limit number of tasks to what can fit in targetTotal (min 0.25 per task)
+        const maxPossibleTasks = Math.max(1, Math.floor(targetTotal / 0.25));
+        const limitedTasks = tasks.slice(0, maxPossibleTasks);
+
+        let allocatedHours = 0;
+        const entriesToInsert = limitedTasks.map((t, index) => {
+            let h = Math.round(((t.percentage / 100) * targetTotal) / 0.25) * 0.25;
+            if (h === 0) h = 0.25;
+            allocatedHours += h;
+
+            return {
+                task_id: assignedTaskId,
+                date: start.toISOString().split('T')[0],
+                start_time: startStr,
+                end_time: endStr,
+                hours: h,
+                notes: t.note,
+                raw_data: JSON.stringify(activities.map(a => `[${a.process_name}] ${a.window_title}`)),
+                status: 'draft'
+            };
         });
-        await logCron(`✅ Summary drafted${assignedTaskId ? ' (Auto-assigned)' : ''}: ${summary.substring(0, 50)}...`);
-    } catch (e) { await logCron(`❌ Summarization failed: ${e.message}`); } finally { isCronSummarizing = false; }
+
+        // Balance to match targetTotal exactly
+        let attempts = 0;
+        while (Math.abs(allocatedHours - targetTotal) > 0.001 && attempts < 10) {
+            attempts++;
+            if (allocatedHours > targetTotal) {
+                const largest = entriesToInsert.reduce((a, b) => a.hours > b.hours ? a : b);
+                if (largest.hours > 0.25) {
+                    largest.hours -= 0.25;
+                    allocatedHours -= 0.25;
+                } else { break; }
+            } else {
+                const largest = entriesToInsert.reduce((a, b) => a.hours > b.hours ? a : b);
+                largest.hours += 0.25;
+                allocatedHours += 0.25;
+            }
+        }
+
+        for (const entry of entriesToInsert) {
+            await db('timesheet_entries').insert(entry);
+        }
+
+        await logCron(`✅ ${entriesToInsert.length} tasks drafted${assignedTaskId ? ' (Auto-assigned)' : ''}.`);
+    } catch (e) { console.error(e); await logCron(`❌ Summarization failed: ${e.message}`); } finally { isCronSummarizing = false; }
 }
 
 cron.schedule('0 10-17 * * 1-5', async () => {

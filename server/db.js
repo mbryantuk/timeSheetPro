@@ -55,6 +55,8 @@ async function initDb() {
       table.text('ocr_text');
       table.text('image_data');
       table.integer('duration_ms');
+      table.boolean('is_background').defaultTo(false);
+      table.boolean('is_call').defaultTo(false);
       table.string('task_id').references('id').inTable('tasks'); // Link activity to a task
     });
   }
