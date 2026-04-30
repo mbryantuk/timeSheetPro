@@ -114,7 +114,13 @@ async function initDb() {
         table.timestamp('end_time');
       });
     }
+    if (!(await db.schema.hasColumn('timesheet_entries', 'is_billable'))) {
+      await db.schema.alterTable('timesheet_entries', (table) => {
+        table.boolean('is_billable').defaultTo(true);
+      });
+    }
   }
+
 }
 
 module.exports = { db, initDb };

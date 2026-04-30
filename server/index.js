@@ -258,13 +258,23 @@ app.get('/api/export/weekly', async (req, res) => {
       .join('tasks', 'timesheet_entries.task_id', 'tasks.id')
       .join('projects', 'tasks.project_id', 'projects.id')
       .where('timesheet_entries.status', 'approved')
-      .select('tasks.account_name', 'projects.name as project_name', 'tasks.name as task_name', 'timesheet_entries.date')
+      .select('tasks.account_name', 'projects.name as project_name', 'tasks.name as task_name', 'timesheet_entries.date', 'timesheet_entries.is_billable')
       .sum('timesheet_entries.hours as total_hours')
       .select(db.raw('GROUP_CONCAT(timesheet_entries.notes, "\\n- ") as combined_notes'))
-      .groupBy('tasks.account_name', 'projects.name', 'tasks.name', 'timesheet_entries.date').orderBy('timesheet_entries.date', 'desc');
+      .groupBy('tasks.account_name', 'projects.name', 'tasks.name', 'timesheet_entries.date', 'timesheet_entries.is_billable').orderBy('timesheet_entries.date', 'desc');
     res.json(exports);
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
+
+app.put('/api/entries/:id/billable', async (req, res) => {
+  const { id } = req.params;
+  const { is_billable } = req.body;
+  try {
+    await db('timesheet_entries').where('id', id).update({ is_billable });
+    res.json({ success: true });
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
 
 app.get('/api/drafts', async (req, res) => {
   try {

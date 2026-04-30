@@ -6,12 +6,13 @@ Based on the audit of the current codebase and your preferences for a **Manual M
 
 ### 🟢 Category A: Matrix & "Last-Mile" Export (Klient Alignment)
 - [x] 1.  **Smart Row Formatting:** Format the "Copy to Excel" output specifically to match the Klient "Add Multiple Rows" clipboard format.
-- [ ] 2.  **Billable Toggle on Matrix:** Add a column in the Weekly Matrix to toggle Billable/Non-Billable status.
+- [x] 2.  **Billable Toggle on Matrix:** Add a column in the Weekly Matrix to toggle Billable/Non-Billable status.
 - [x] 3.  **Color-Coded Billability:** Highlight non-billable rows (e.g., Internal/Admin) in light gray to distinguish them.
 - [x] 4.  **Gap Detector:** Highlight cells in the matrix where daily totals are under 7.5 hours.
 - [x] 5.  **Multi-Select Approve:** Add checkboxes to the "Pending Drafts" list to approve 20+ drafts at once.
 - [x] 6.  **Daily Note Concatenator:** Option to merge all notes for a single task/day into one bulleted list.
 - [x] 7.  **Overtime Indicator:** Visual warning if a daily total exceeds 10 hours.
+
 - [ ] 8.  **Holiday Overlay:** Integrate a bank holiday API to pre-fill or skip tracking for holidays.
 - [ ] 9.  **Decimal Precision Toggle:** Switch between 2 decimal places (0.25) and minutes (15m) for review.
 - [ ] 10. **Excel Template Download:** Generate a pre-formatted `.xlsx` file that matches the Klient import schema.
